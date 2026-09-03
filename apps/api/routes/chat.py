@@ -80,6 +80,16 @@ async def _handle_chat_impl(request: ChatRequest):
         repo = BankingRepository(session)
         customer = await repo.get_customer_by_external_id(customer_external_id)
         if not customer:
+            # Fallback: guest external_id may have been converted to CUST-XXXX
+            # during account opening. Look up via existing session thread_id.
+            from database.models.banking import ChatSession
+            existing_session = (await session.execute(
+                select(ChatSession).where(ChatSession.thread_id == thread_id)
+            )).scalars().first()
+            if existing_session:
+                customer = await session.get(Customer, existing_session.customer_id)
+
+        if not customer:
             if customer_external_id.startswith("GUEST") or customer_external_id.startswith("PROSPECT") or customer_external_id.startswith("NEW"):
                 customer = Customer(
                     external_id=customer_external_id,

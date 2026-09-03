@@ -241,6 +241,8 @@ async def create_account_node(state: BankingSessionState) -> Dict[str, Any]:
     return {
         "account_data": data,
         "active_workflow": "NONE",
+        "customer_name": data.get("full_name", "Valued Customer"),
+        "customer_external_id": assigned_cust_ext_id,
         "final_response": resp,
         "messages": [AIMessage(content=resp)],
         "widget_type": "ACCOUNT_CARD",

@@ -349,8 +349,9 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 12. Default Banking Assistant Menu
+    cust_display_name = state.get("customer_name", "").split(" ")[0] if state.get("customer_name") else "there"
     default_msg = (
-        "Hello Amanpreet! I am your AI Banking Assistant. I can assist you with:\n"
+        f"Hello {cust_display_name}! I am your AI Banking Assistant. I can assist you with:\n"
         "• Transfers & Beneficiaries: Send money, UPI payments, balance checks\n"
         "• Cards Management: Instant freeze/unfreeze, report lost card, set limits\n"
         "• Loans & Advisory: EMI calculators, loan eligibility, application submission\n"

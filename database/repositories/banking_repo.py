@@ -293,17 +293,24 @@ class BankingRepository:
         customer_id: int,
         title: str = "New Conversation"
     ) -> ChatSession:
-        query = select(ChatSession).where(ChatSession.thread_id == thread_id, ChatSession.customer_id == customer_id)
+        # thread_id is unique — look up by thread_id only to handle
+        # guest-to-customer conversion (where customer_id changes mid-flow)
+        query = select(ChatSession).where(ChatSession.thread_id == thread_id)
         result = await self.session.execute(query)
         session_obj = result.scalars().first()
-        if not session_obj:
-            session_obj = ChatSession(
-                thread_id=thread_id,
-                customer_id=customer_id,
-                title=title
-            )
-            self.session.add(session_obj)
-            await self.session.flush()
+        if session_obj:
+            # Update customer_id if guest was converted to full customer
+            if session_obj.customer_id != customer_id:
+                session_obj.customer_id = customer_id
+                await self.session.flush()
+            return session_obj
+        session_obj = ChatSession(
+            thread_id=thread_id,
+            customer_id=customer_id,
+            title=title
+        )
+        self.session.add(session_obj)
+        await self.session.flush()
         return session_obj
 
     async def update_session(self, thread_id: str, customer_id: int, title: Optional[str] = None):
