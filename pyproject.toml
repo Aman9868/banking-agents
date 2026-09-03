@@ -44,4 +44,13 @@ pythonpath = ["."]
 [tool.vercel]
 entrypoint = "apps.api.main:app"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agents*", "apps*", "checkpoints*", "database*", "gateway*", "policies*", "security*", "services*", "tools*"]
+exclude = ["tests*", "docker*", "docs*"]
+
+[tool.setuptools.package-data]
+"*" = ["*"]
+
+
 
