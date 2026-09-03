@@ -30,6 +30,7 @@ async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
     3. Escalation & support ticket creation
     """
     customer_id = state.get("customer_id", 1)
+    sub_intent = state.get("current_sub_intent") or state.get("support_data", {}).get("sub_intent")
     last_msg = ""
     for msg in reversed(state.get("messages", [])):
         if isinstance(msg, HumanMessage):
@@ -40,6 +41,34 @@ async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
 
     async with AsyncSessionLocal() as session:
         repo = BankingRepository(session)
+
+        # 0. High-Priority Fraud / Unauthorized Transaction
+        if sub_intent == "UNAUTHORIZED_TRANSACTION" or any(k in text_lower for k in ["unauthorized", "fraud", "someone stole", "suspicious charge"]):
+            ticket_res = await tool_gateway.execute_tool(
+                agent_role=AgentRole.SUPPORT_AGENT.value,
+                tool_name="create_support_ticket",
+                repo=repo,
+                customer_id=customer_id,
+                parameters={
+                    "subject": "🚨 URGENT: Unauthorized Transaction & Fraud Report",
+                    "description": f"Customer reported unauthorized activity: {last_msg}",
+                    "priority": "HIGH"
+                }
+            )
+            await session.commit()
+            ticket_id = ticket_res.data.get("ticket_id", "TKT-SEC-01") if ticket_res.success else "TKT-SEC-01"
+            resp = (
+                f"🚨 **High-Priority Fraud Report Logged** (Ref: `{ticket_id}`)\n\n"
+                "We take unauthorized charges very seriously. I have escalated this directly to NovaBank's Fraud Investigation Team.\n\n"
+                "**Immediate Safety Recommendation:**\n"
+                "• Would you like me to **freeze your card immediately** to prevent any further unauthorized activity?\n"
+                "• Simply say *'Freeze my card'* or click the Cards menu to lock it instantly."
+            )
+            return {
+                "active_workflow": "NONE",
+                "final_response": resp,
+                "messages": [AIMessage(content=resp)]
+            }
 
         # 1. Human Escalation / Create Support Ticket
         if any(k in text_lower for k in ["human", "agent", "escalate", "file a complaint", "open ticket", "raise ticket"]):

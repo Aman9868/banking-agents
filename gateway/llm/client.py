@@ -98,42 +98,190 @@ class LLMGateway:
         text_lower = last_user_msg.lower()
 
         # Intent classification mode
-        if "classify the intent" in system_instruction.lower() or model_tier == "routing":
-            if any(k in text_lower for k in ["transfer", "send money", "pay "]):
-                return json.dumps({
-                    "intent": "TRANSFER_MONEY",
-                    "confidence": 0.95
-                })
-            elif any(k in text_lower for k in ["open", "savings account", "current account", "open account"]):
-                return json.dumps({
-                    "intent": "OPEN_ACCOUNT",
-                    "confidence": 0.95
-                })
-            elif any(k in text_lower for k in ["balance", "how much money", "account balance"]):
-                return json.dumps({
-                    "intent": "BALANCE_CHECK",
-                    "confidence": 0.98
-                })
-            elif any(k in text_lower for k in ["declined", "dispute", "failed", "unauthorized", "why was"]):
-                return json.dumps({
-                    "intent": "SUPPORT_DISPUTE",
-                    "confidence": 0.95
-                })
-            elif text_lower in ["yes", "confirm", "proceed", "sure", "yep", "do it"]:
-                return json.dumps({
-                    "intent": "CONFIRM_YES",
-                    "confidence": 0.99
-                })
-            elif text_lower in ["no", "cancel", "stop", "nevermind", "abort"]:
-                return json.dumps({
-                    "intent": "CONFIRM_NO",
-                    "confidence": 0.99
-                })
-            else:
+        if "banking intent classification" in system_instruction.lower() or model_tier == "routing":
+            # 1. Negation detection
+            if any(k in text_lower for k in ["don't want to transfer", "do not transfer", "don't transfer", "not want to transfer", "don't freeze", "do not freeze", "don't pay", "do not pay"]):
                 return json.dumps({
                     "intent": "GENERAL_CONVERSATION",
-                    "confidence": 0.80
+                    "sub_intent": "OTHER",
+                    "confidence": 0.98,
+                    "negation_detected": True,
+                    "reasoning": "Explicit customer negation detected; prevented action execution.",
+                    "entities": {},
+                    "requires_clarification": False
                 })
+
+            # 2. Temporal inquiry
+            if any(k in text_lower for k in ["what is the time", "what time is it", "what date is today", "what is today's date", "todays date", "current time", "what day is today"]):
+                return json.dumps({
+                    "intent": "TEMPORAL_QUERY",
+                    "sub_intent": "CURRENT_TIME_DATE",
+                    "confidence": 1.0,
+                    "negation_detected": False,
+                    "reasoning": "Inquiry regarding current time and date.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 3. Card Actions (freeze, unfreeze, card limit, replace, stolen/lost card lock)
+            if any(k in text_lower for k in ["freeze", "freze", "unfreeze", "unfreze", "stolen card", "lost card", "card limit", "replace card", "my cards", "card status"]) or ("card" in text_lower and any(f in text_lower for f in ["freeze", "freze", "lock"])):
+                sub = "FREEZE_CARD" if any(f in text_lower for f in ["freeze", "freze", "lock", "stolen", "lost"]) else "CARD_STATUS"
+                return json.dumps({
+                    "intent": "CARD_ACTION",
+                    "sub_intent": sub,
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Customer card management request.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 4. Support & Dispute Sub-Intents
+            if any(k in text_lower for k in ["unauthorized", "fraud", "someone used my card", "suspicious debit", "stolen money"]):
+                return json.dumps({
+                    "intent": "SUPPORT_DISPUTE",
+                    "sub_intent": "UNAUTHORIZED_TRANSACTION",
+                    "confidence": 0.99,
+                    "negation_detected": False,
+                    "reasoning": "Customer reporting unauthorized / fraudulent activity.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+            elif any(k in text_lower for k in ["card payment declined", "card declined", "pos declined", "swipe declined", "why was my card"]):
+                return json.dumps({
+                    "intent": "SUPPORT_DISPUTE",
+                    "sub_intent": "CARD_PAYMENT_DECLINED",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Customer inquiring regarding declined card transaction.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+            elif any(k in text_lower for k in ["upi failed", "upi declined", "gpay failed", "phonepe failed", "upi error"]):
+                return json.dumps({
+                    "intent": "SUPPORT_DISPUTE",
+                    "sub_intent": "UPI_PAYMENT_FAILED",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Customer reporting failed UPI transaction.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+            elif any(k in text_lower for k in ["transfer failed", "neft failed", "rtgs failed", "wire rejected", "transfer rejected"]):
+                return json.dumps({
+                    "intent": "SUPPORT_DISPUTE",
+                    "sub_intent": "TRANSFER_FAILED",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Customer reporting failed wire / interbank transfer.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+            elif any(k in text_lower for k in ["declined", "dispute", "failed", "unauthorized", "why was", "chargeback", "human", "agent", "ticket", "escalate", "complaint"]):
+                return json.dumps({
+                    "intent": "SUPPORT_DISPUTE",
+                    "sub_intent": "CREATE_TICKET",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "General customer transaction dispute / issue.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 5. PFM / Spending Insights
+            if any(k in text_lower for k in ["spending", "spend", "expenses", "expense", "subscriptions", "subscription", "recurring", "cashflow", "how much did i spend", "budget"]):
+                return json.dumps({
+                    "intent": "SPENDING_INSIGHTS",
+                    "sub_intent": "SPENDING_BREAKDOWN",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Customer inquiring about spending analytics and insights.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 6. Loans & EMI
+            if any(k in text_lower for k in ["emi", "personal loan", "home loan", "loan eligibility", "apply loan", "calculate emi", "car loan", "lon"]):
+                return json.dumps({
+                    "intent": "LOAN_ACTION",
+                    "sub_intent": "EMI_CALCULATION",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Loan advisory or EMI calculation inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 7. Bill Payments
+            if any(k in text_lower for k in ["electricity bill", "pay bill", "broadband bill", "utility", "pay airtel", "pay tata", "upi", "elctricty"]):
+                return json.dumps({
+                    "intent": "PAYMENT_ACTION",
+                    "sub_intent": "ELECTRICITY_BILL",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Utility or bill payment inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 8. Knowledge FAQ
+            if any(k in text_lower for k in ["interest rate", "fixed deposit", "atm charges", "fees for", "what are the charges", "policy on", "minimum balance"]):
+                return json.dumps({
+                    "intent": "KNOWLEDGE_FAQ",
+                    "sub_intent": "OTHER",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "General knowledge or banking policy inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 9. Transfer (with typo tolerance: 'trnasfer', 'send 5k')
+            if any(k in text_lower for k in ["transfer", "trnasfer", "send money", "pay rahul", "send 5000", "send "]):
+                return json.dumps({
+                    "intent": "TRANSFER_MONEY",
+                    "sub_intent": "DOMESTIC_P2P_TRANSFER",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Money transfer request.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 10. Account Opening
+            if any(k in text_lower for k in ["open a savings", "open account", "open current", "i want to open", "open a new account", "open bank account", "new account", "create account", "register account", "open savings", "accont"]):
+                return json.dumps({
+                    "intent": "OPEN_ACCOUNT",
+                    "sub_intent": "SAVINGS_ACCOUNT_OPENING",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "New account opening application.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 11. Balance Check (with typo tolerance: 'balence', 'wht is my bal')
+            if any(k in text_lower for k in ["balance", "balence", "account balance", "how much money", "wht is my bal", "show balance"]):
+                return json.dumps({
+                    "intent": "BALANCE_CHECK",
+                    "sub_intent": "OTHER",
+                    "confidence": 0.99,
+                    "negation_detected": False,
+                    "reasoning": "Account balance inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 12. General Conversation
+            return json.dumps({
+                "intent": "GENERAL_CONVERSATION",
+                "sub_intent": "GREETING",
+                "confidence": 0.85,
+                "negation_detected": False,
+                "reasoning": "General greeting, conversation, or unspecified query.",
+                "entities": {},
+                "requires_clarification": False
+            })
 
         # Conversational generation fallback
         return f"I understand your request regarding '{last_user_msg}'. How can I assist further?"

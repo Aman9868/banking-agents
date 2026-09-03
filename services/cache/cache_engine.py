@@ -42,39 +42,82 @@ class CacheEngine:
         query_hash = hashlib.sha256(normalized_query.encode("utf-8")).hexdigest()[:16]
         return f"cache:cust:{customer_id}:q:{query_hash}"
 
+    def get_intent_signature(self, query: str, intent: Optional[str] = None) -> Optional[str]:
+        """Maps query to canonical semantic signature (e.g. intent:BALANCE_CHECK)."""
+        if intent:
+            return f"intent:{intent}"
+        q = query.lower()
+        if any(k in q for k in ["balance", "balence", "how much money", "account balance", "wht is my bal", "show balance"]):
+            return "intent:BALANCE_CHECK"
+        if any(k in q for k in ["spending", "spend", "expenses", "expense", "subscriptions", "recurring", "cashflow"]):
+            return "intent:SPENDING_INSIGHTS"
+        if any(k in q for k in ["interest rate", "fixed deposit", "atm charges", "fees for", "what are the charges", "policy on"]):
+            return "intent:KNOWLEDGE_FAQ"
+        return None
+
     def is_cacheable(self, query: str) -> bool:
         """Determines if a query is an informational read-only request safe for caching."""
         q = query.lower()
         # Non-cacheable: mutating operations or explicit confirmations
-        if any(k in q for k in ["transfer", "send", "pay", "freeze", "unfreeze", "apply", "replace", "yes", "confirm", "no", "cancel"]):
+        if any(k in q for k in ["transfer", "trnasfer", "send", "pay", "freeze", "freze", "unfreeze", "apply", "replace", "yes", "confirm", "no", "cancel"]):
             return False
         # Cacheable: balance check, status, interest rates, FAQs, fees
-        if any(k in q for k in ["balance", "interest rate", "fixed deposit", "fees", "charges", "what are the charges", "policy"]):
+        if any(k in q for k in ["balance", "balence", "interest rate", "fixed deposit", "fees", "charges", "what are the charges", "policy", "spending", "expenses"]):
             return True
         return False
 
-    async def get_cached_response(self, customer_id: int, query: str) -> Optional[Dict[str, Any]]:
-        """Retrieves cached response from Redis or in-memory fallback."""
+    async def get_cached_response(
+        self,
+        customer_id: int,
+        query: str,
+        intent: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Layered Cache Lookup:
+        Layer 1: Exact Query Hash (Redis Key-Value)
+        Layer 2: Intent-Signature Semantic Cache (Canonical intent + entities)
+        """
         if not self.is_cacheable(query):
             return None
 
         norm = self.normalize_query(query)
-        cache_key = self._generate_key(customer_id, norm)
-
         client = await self._get_client()
+
+        # 1. Exact Query Key Lookup
+        cache_key = self._generate_key(customer_id, norm)
         if client:
             try:
                 cached_str = await client.get(cache_key)
                 if cached_str:
-                    logger.info("Redis Query Cache Hit", customer_id=customer_id, key=cache_key)
+                    logger.info("Redis Query Exact Cache Hit", customer_id=customer_id, key=cache_key)
                     return json.loads(cached_str)
             except Exception as exc:
                 logger.warn("Redis cache read error", error=str(exc))
 
-        # In-memory fallback
         if cache_key in self._in_memory_cache:
-            logger.info("In-Memory Query Cache Hit", customer_id=customer_id)
+            logger.info("In-Memory Query Exact Cache Hit", customer_id=customer_id)
             return self._in_memory_cache[cache_key]
+
+        # 2. Intent-Level Semantic Cache Lookup
+        sig = self.get_intent_signature(query, intent)
+        if sig:
+            sig_key = f"cache:cust:{customer_id}:{sig}"
+            if client:
+                try:
+                    cached_str = await client.get(sig_key)
+                    if cached_str:
+                        logger.info("Redis Intent Semantic Cache Hit", customer_id=customer_id, key=sig_key)
+                        res = json.loads(cached_str)
+                        res["is_semantic_cache_hit"] = True
+                        return res
+                except Exception as exc:
+                    logger.warn("Redis semantic cache read error", error=str(exc))
+
+            if sig_key in self._in_memory_cache:
+                logger.info("In-Memory Intent Semantic Cache Hit", customer_id=customer_id)
+                res = dict(self._in_memory_cache[sig_key])
+                res["is_semantic_cache_hit"] = True
+                return res
 
         return None
 
@@ -83,31 +126,39 @@ class CacheEngine:
         customer_id: int,
         query: str,
         response_payload: Dict[str, Any],
-        ttl_seconds: int = 300
+        ttl_seconds: int = 300,
+        intent: Optional[str] = None
     ):
-        """Stores response in Redis cache with appropriate TTL."""
+        """Stores response in both exact and semantic cache layers."""
         if not self.is_cacheable(query):
             return
 
         norm = self.normalize_query(query)
         cache_key = self._generate_key(customer_id, norm)
 
-        # Use 60s TTL for real-time balances, 3600s (1hr) for static FAQs and interest rates
-        if "balance" in query.lower():
+        # TTL strategy: 60s for live balances, 3600s for static FAQs
+        if "balance" in query.lower() or intent == "BALANCE_CHECK":
             ttl = 60
         else:
             ttl = 3600
 
         client = await self._get_client()
+        sig = self.get_intent_signature(query, intent)
+        sig_key = f"cache:cust:{customer_id}:{sig}" if sig else None
+
         if client:
             try:
                 await client.set(cache_key, json.dumps(response_payload), ex=ttl)
+                if sig_key:
+                    await client.set(sig_key, json.dumps(response_payload), ex=ttl)
                 return
             except Exception as exc:
                 logger.warn("Redis cache write error", error=str(exc))
 
         # In-memory fallback
         self._in_memory_cache[cache_key] = response_payload
+        if sig_key:
+            self._in_memory_cache[sig_key] = response_payload
 
     async def invalidate_customer_cache(self, customer_id: int):
         """

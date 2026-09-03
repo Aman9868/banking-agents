@@ -11,7 +11,13 @@ from agents.loan.graph import loan_subgraph
 from agents.payment.graph import payment_subgraph
 from agents.support.graph import support_subgraph
 from agents.insights.graph import insights_subgraph
-from gateway.llm.router import classify_intent, extract_slots
+from gateway.llm.router import (
+    route_banking_request,
+    BankingIntent,
+    BankingSubIntent,
+    classify_intent,
+    extract_slots
+)
 from gateway.tool_gateway.gateway import tool_gateway
 from gateway.tool_gateway.permissions import AgentRole
 from database.connection import AsyncSessionLocal
@@ -26,9 +32,10 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
     """
     Supervisor brain:
     1. Inspects active workflow and context switching state.
-    2. Identifies customer intent across 6 specialized banking capability areas.
+    2. Identifies customer intent using Pydantic structured router with sub-intents.
     3. Handles topic interruptions (e.g., balance check or FAQ during account opening).
-    4. Dispatches to specialized subgraphs or answers informational queries directly.
+    4. Handles negations and temporal date/time queries directly.
+    5. Dispatches to specialized subgraphs or answers informational queries directly.
     """
     last_msg = ""
     for msg in reversed(state.get("messages", [])):
@@ -36,11 +43,24 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
             last_msg = msg.content.strip()
             break
 
-    intent = await classify_intent(last_msg)
-    slots = await extract_slots(last_msg)
     active_wf = state.get("active_workflow", "NONE")
     customer_id = state.get("customer_id", 1)
     memory = dict(state.get("customer_memory") or {})
+
+    # Route request using production-grade Pydantic router
+    routing_ctx = {
+        "active_workflow": active_wf,
+        "account_data": state.get("account_data"),
+        "transfer_data": state.get("transfer_data"),
+        "payment_data": state.get("payment_data"),
+    }
+    decision = await route_banking_request(last_msg, context=routing_ctx)
+    intent = decision.intent.value
+    sub_intent = decision.sub_intent.value if decision.sub_intent else None
+    slots = decision.entities.model_dump()
+    confidence = decision.confidence
+    reasoning = decision.reasoning
+    negation = decision.negation_detected
 
     # Cross-Subgraph Entity Memory: resolve pronouns and references (e.g. "Send him another 2000")
     if not slots.get("beneficiary_name") and any(w in last_msg.lower() for w in ["him", "her", "them", "to same", "again", "another"]):
@@ -58,7 +78,67 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
     if slots.get("card_type"):
         memory["last_card_type"] = slots["card_type"]
 
-    logger.info("Supervisor evaluating request", intent=intent, active_workflow=active_wf)
+    logger.info(
+        "Supervisor evaluating request",
+        intent=intent,
+        sub_intent=sub_intent,
+        confidence=confidence,
+        negation=negation,
+        active_workflow=active_wf
+    )
+
+    # 0a. Explicit Negation Safety Guard (e.g. "I don't want to transfer money", "Don't freeze my card")
+    if negation and intent in ["TRANSFER_MONEY", "CARD_ACTION", "PAYMENT_ACTION", "OPEN_ACCOUNT", "LOAN_ACTION"]:
+        action_name = intent.replace("_", " ").lower()
+        resp = f"Understood! I will not proceed with any {action_name}. Let me know if you need help with anything else."
+        return {
+            "current_intent": "GENERAL_CONVERSATION",
+            "current_sub_intent": sub_intent,
+            "intent_confidence": confidence,
+            "routing_reasoning": reasoning,
+            "negation_detected": True,
+            "active_workflow": "NONE",
+            "final_response": resp,
+            "messages": [AIMessage(content=resp)],
+            "customer_memory": memory
+        }
+
+    # 0b. Temporal Query (Current Date & Time, like ChatGPT)
+    if intent == "TEMPORAL_QUERY":
+        import datetime
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
+        time_resp = (
+            f"Today is **{now_ist.strftime('%A, %d %B %Y')}**, and the current local time is "
+            f"**{now_ist.strftime('%I:%M %p IST')}** (UTC: {now_utc.strftime('%H:%M')})."
+        )
+        return {
+            "current_intent": "TEMPORAL_QUERY",
+            "current_sub_intent": "CURRENT_TIME_DATE",
+            "intent_confidence": confidence,
+            "routing_reasoning": reasoning,
+            "active_workflow": "NONE",
+            "final_response": time_resp,
+            "messages": [AIMessage(content=time_resp)],
+            "customer_memory": memory
+        }
+
+    # 0c. Low-confidence Disambiguation / Clarification
+    if decision.requires_clarification:
+        clarification_msg = decision.clarification_prompt or (
+            "I want to make sure I assist you accurately. Could you please specify whether you would like to "
+            "check your balance, make a transfer, or manage your cards?"
+        )
+        return {
+            "current_intent": "GENERAL_CONVERSATION",
+            "current_sub_intent": "CLARIFICATION",
+            "intent_confidence": confidence,
+            "routing_reasoning": reasoning,
+            "active_workflow": "NONE",
+            "final_response": clarification_msg,
+            "messages": [AIMessage(content=clarification_msg)],
+            "customer_memory": memory
+        }
 
     # 1. Informational Interruption: Balance Check
     if intent == "BALANCE_CHECK":
@@ -239,9 +319,15 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
 
     # 10. Route to Support Subgraph
     if intent == "SUPPORT_DISPUTE":
+        support_data = dict(state.get("support_data") or {})
+        support_data["sub_intent"] = sub_intent
+        if slots.get("transaction_ref"):
+            support_data["transaction_ref"] = slots["transaction_ref"]
         return {
             "current_intent": "SUPPORT_DISPUTE",
+            "current_sub_intent": sub_intent,
             "active_workflow": "SUPPORT",
+            "support_data": support_data,
             "customer_memory": memory
         }
 
@@ -256,6 +342,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
 
         return {
             "current_intent": "SPENDING_INSIGHTS",
+            "current_sub_intent": sub_intent or "SPENDING_BREAKDOWN",
             "active_workflow": "INSIGHTS",
             "insights_data": {"action": ins_action, "days": 30},
             "customer_memory": memory
@@ -273,6 +360,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
     )
     return {
         "current_intent": "GENERAL_CONVERSATION",
+        "current_sub_intent": sub_intent,
         "active_workflow": "NONE",
         "final_response": default_msg,
         "messages": [AIMessage(content=default_msg)],
@@ -286,7 +374,7 @@ def supervisor_dispatch(state: BankingSessionState) -> str:
     intent = state.get("current_intent")
 
     # If the router already produced the final response (e.g. balance check, FAQ, or cancellation)
-    if state.get("final_response") and intent in ["BALANCE_CHECK", "KNOWLEDGE_FAQ", "GENERAL_CONVERSATION", "CONFIRM_NO"]:
+    if state.get("final_response") and intent in ["BALANCE_CHECK", "KNOWLEDGE_FAQ", "GENERAL_CONVERSATION", "CONFIRM_NO", "TEMPORAL_QUERY"]:
         return END
 
     if wf == "OPEN_ACCOUNT":
