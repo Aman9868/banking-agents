@@ -10,13 +10,14 @@ from database.connection import AsyncSessionLocal
 from database.repositories.banking_repo import BankingRepository
 from database.models.banking import Customer, Account
 from sqlalchemy import select
+from agents.account.validators import validate_email, validate_date_of_birth, validate_full_name
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 
 async def collect_profile_node(state: BankingSessionState) -> Dict[str, Any]:
-    """Inspects missing slots in account application and prompts customer or advances state."""
+    """Inspects missing slots in account application, validates inputs strictly, and prompts customer."""
     data: AccountWorkflowData = dict(state.get("account_data") or {})
 
     # Extract info from last message if applicable
@@ -26,19 +27,60 @@ async def collect_profile_node(state: BankingSessionState) -> Dict[str, Any]:
             last_msg = msg.content.strip()
             break
 
+    # Graceful cancellation check
+    if any(k in last_msg.lower() for k in ["cancel", "stop opening", "abort", "exit account opening", "nevermind"]):
+        resp = "Account opening application has been cancelled. Let me know if you would like to explore any other banking services!"
+        return {
+            "account_data": None,
+            "active_workflow": "NONE",
+            "final_response": resp,
+            "messages": [AIMessage(content=resp)]
+        }
+
     # If currently expecting a specific slot
     current_step = data.get("step")
     is_opening_trigger = any(k in last_msg.lower() for k in ["open", "account", "savings", "current", "apply", "register", "novabank"])
 
+    # 1. Full Name Processing & Validation
     if current_step == "NAME" and not data.get("full_name") and last_msg and not is_opening_trigger:
-        data["full_name"] = last_msg
+        is_valid, cleaned_name, err = validate_full_name(last_msg)
+        if not is_valid:
+            resp = err or "Please provide your full legal name as it appears on your official government ID."
+            return {
+                "account_data": data,
+                "final_response": resp,
+                "messages": [AIMessage(content=resp)]
+            }
+        data["full_name"] = cleaned_name
         data["step"] = "DOB"
+
+    # 2. Date of Birth Processing & Validation
     elif current_step == "DOB" and not data.get("date_of_birth") and last_msg:
-        data["date_of_birth"] = last_msg
+        is_valid, cleaned_dob, err = validate_date_of_birth(last_msg)
+        if not is_valid:
+            resp = err or "Please provide a valid date of birth in DD/MM/YYYY or YYYY-MM-DD format (applicants must be at least 18 years old)."
+            return {
+                "account_data": data,
+                "final_response": resp,
+                "messages": [AIMessage(content=resp)]
+            }
+        data["date_of_birth"] = cleaned_dob
         data["step"] = "EMAIL"
+
+    # 3. Email Address Processing & Validation
     elif current_step == "EMAIL" and not data.get("email") and last_msg:
-        data["email"] = last_msg
+        is_valid, cleaned_email, err = validate_email(last_msg)
+        if not is_valid:
+            resp = err or "That doesn't appear to be a valid email address. Please provide a real email like name@example.com."
+            return {
+                "account_data": data,
+                "final_response": resp,
+                "messages": [AIMessage(content=resp)]
+            }
+        data["email"] = cleaned_email
         data["step"] = "TYPE"
+
+    # 4. Account Type Selection
     elif current_step == "TYPE" and not data.get("account_type") and last_msg:
         data["account_type"] = "CURRENT" if "current" in last_msg.lower() else "SAVINGS"
         data["step"] = "KYC"
