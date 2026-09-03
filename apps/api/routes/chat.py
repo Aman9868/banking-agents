@@ -147,7 +147,9 @@ async def _handle_chat_impl(request: ChatRequest):
         "messages": [HumanMessage(content=request.message)],
         "customer_id": customer_id,
         "customer_external_id": customer_external_id,
-        "customer_name": customer_name
+        "customer_name": customer_name,
+        "widget_type": None,
+        "widget_data": None
     }
 
     try:
@@ -376,12 +378,27 @@ async def list_available_customers():
     """Returns available existing personas and guest onboarding mode for UI testing."""
     async with AsyncSessionLocal() as session:
         repo = BankingRepository(session)
-        query = select(Customer).order_by(Customer.id.asc()).limit(10)
+        # Fetch verified and active customer personas, newest first, filtering out transient guest rows
+        query = (
+            select(Customer)
+            .where(~Customer.external_id.startswith("GUEST-PROSPECT-"))
+            .order_by(Customer.id.desc())
+            .limit(30)
+        )
         res = await session.execute(query)
         custs = res.scalars().all()
 
-        results = []
+        # Keep primary demo persona Amanpreet Singh at the top
+        amanpreet = await repo.get_customer_by_external_id("CUST-1001")
+        ordered_custs = [amanpreet] if amanpreet else []
+        seen_ids = {"CUST-1001"}
         for c in custs:
+            if c.external_id not in seen_ids and not c.external_id.startswith("GUEST-NAMEFIX"):
+                seen_ids.add(c.external_id)
+                ordered_custs.append(c)
+
+        results = []
+        for c in ordered_custs:
             accs = await repo.get_accounts_by_customer_id(c.id)
             primary_bal = max([a.balance for a in accs], default=0.0) if accs else 0.0
             results.append({

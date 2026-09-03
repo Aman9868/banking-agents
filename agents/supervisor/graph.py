@@ -180,7 +180,10 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
             "current_intent": intent,
             "active_workflow": "NONE",
             "final_response": balance_msg,
-            "messages": [AIMessage(content=balance_msg)]
+            "messages": [AIMessage(content=balance_msg)],
+            "customer_memory": memory,
+            "widget_type": None,
+            "widget_data": None
         }
 
     # 2. Informational Interruption: Knowledge Base RAG
@@ -262,6 +265,36 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
             "active_workflow": "OPEN_ACCOUNT",
             "account_data": acc_data,
             "customer_memory": memory
+        }
+
+    # 5b. Beneficiary Management & FAQ (intercept before Transfer Subgraph)
+    lower_msg = last_msg.lower()
+    if any(k in lower_msg for k in ["beneficiar", "beeficiar"]) and any(k in lower_msg for k in ["how to", "how do", "add", "register", "create", "new"]):
+        if any(k in lower_msg for k in ["how to", "how do", "process", "steps"]):
+            bene_msg = (
+                "To add a new beneficiary to your account:\n"
+                "1. Provide their **Full Name**, **Bank Account Number**, and **IFSC Code** (e.g., *'Add beneficiary Priya Sharma, account 9876543210, IFSC NOVA0001001'*).\n"
+                "2. Once registered, for safety compliance, transfers above ₹50,000 have a standard 30-minute cooling period.\n\n"
+                "Would you like to add a beneficiary now? Please provide their name, account number, and IFSC code."
+            )
+        else:
+            target_name = slots.get("beneficiary_name") or "the recipient"
+            bene_msg = (
+                f"To add **{target_name}** as a registered beneficiary, please provide their:\n"
+                "• **Account Number** (e.g., 9876543210)\n"
+                "• **IFSC Code** (e.g., NOVA0001001)\n\n"
+                "Once provided, they will be registered and ready for instant transfers!"
+            )
+        return {
+            "current_intent": "KNOWLEDGE_FAQ",
+            "current_sub_intent": "BENEFICIARY_MANAGEMENT",
+            "active_workflow": "NONE",
+            "transfer_data": {},
+            "final_response": bene_msg,
+            "messages": [AIMessage(content=bene_msg)],
+            "customer_memory": memory,
+            "widget_type": None,
+            "widget_data": None
         }
 
     # 6. Route to Transfer Subgraph
@@ -348,7 +381,23 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
             "customer_memory": memory
         }
 
-    # 12. Default Banking Assistant Menu
+    # 12. User Identity Query ("what is my name", "who am i")
+    lower_msg = last_msg.lower()
+    full_cust_name = state.get("customer_name")
+    if any(k in lower_msg for k in ["what is my name", "whats my name", "who am i", "tell me my name"]):
+        name_msg = f"Your registered name with NovaBank is **{full_cust_name}**." if full_cust_name else "I do not have your name registered in this session."
+        return {
+            "current_intent": "GENERAL_CONVERSATION",
+            "current_sub_intent": "USER_IDENTITY",
+            "active_workflow": "NONE",
+            "final_response": name_msg,
+            "messages": [AIMessage(content=name_msg)],
+            "customer_memory": memory,
+            "widget_type": None,
+            "widget_data": None
+        }
+
+    # 13. Default Banking Assistant Menu
     cust_display_name = state.get("customer_name", "").split(" ")[0] if state.get("customer_name") else "there"
     default_msg = (
         f"Hello {cust_display_name}! I am your AI Banking Assistant. I can assist you with:\n"
@@ -365,7 +414,9 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         "active_workflow": "NONE",
         "final_response": default_msg,
         "messages": [AIMessage(content=default_msg)],
-        "customer_memory": memory
+        "customer_memory": memory,
+        "widget_type": None,
+        "widget_data": None
     }
 
 

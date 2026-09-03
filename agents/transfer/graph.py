@@ -70,12 +70,17 @@ async def resolve_transfer_entities_node(state: BankingSessionState) -> Dict[str
             )
 
             if not bene_result.success:
-                resp = f"I could not find '{bene_name}' in your saved beneficiaries list. Please verify the name or add them as a new beneficiary first."
-                data["step"] = "RESOLVE"
+                resp = (
+                    f"I could not find '{bene_name}' in your saved beneficiaries list. "
+                    "To send funds to them, please add them as a beneficiary first by providing their account number and IFSC code."
+                )
                 return {
-                    "transfer_data": data,
+                    "active_workflow": "NONE",
+                    "transfer_data": {},
                     "final_response": resp,
-                    "messages": [AIMessage(content=resp)]
+                    "messages": [AIMessage(content=resp)],
+                    "widget_type": None,
+                    "widget_data": None
                 }
 
             data["beneficiary_id"] = bene_result.data["beneficiary_id"]
