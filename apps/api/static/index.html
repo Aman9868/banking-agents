@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#212121]">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NovaBank AI — Enterprise Banking Assistant</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            sidebar: '#171717',
+            chatbg: '#212121',
+            inputbg: '#2f2f2f',
+            bubble: '#2f2f2f',
+            bordercol: '#383838',
+            primary: '#10a37f',
+            primaryhover: '#1a7f64',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #383838; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+    .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typing {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="h-full flex text-gray-100 font-sans antialiased overflow-hidden bg-chatbg">
+
+  <!-- ================= SIDEBAR (ChatGPT Style) ================= -->
+  <aside id="sidebar" class="w-64 md:w-72 bg-sidebar flex flex-col border-r border-bordercol transition-all duration-300 z-30 flex-shrink-0">
+    
+    <!-- Sidebar Header & New Chat Button -->
+    <div class="p-3 border-b border-bordercol flex flex-col gap-2">
+      <div class="flex items-center justify-between px-2 py-1">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h1 class="text-sm font-semibold tracking-wide text-white">NovaBank AI</h1>
+            <p class="text-[11px] text-gray-400">Enterprise Operating Layer</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Chat Button -->
+      <button id="newChatBtn" class="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-200 bg-inputbg hover:bg-[#3b3b3b] rounded-lg transition-colors border border-bordercol mt-1">
+        <div class="flex items-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4 text-emerald-400"></i>
+          <span>New chat</span>
+        </div>
+        <kbd class="text-[10px] text-gray-400 bg-black/40 px-1.5 py-0.5 rounded border border-bordercol">⌘K</kbd>
+      </button>
+
+      <!-- Test New User Onboarding Quick Button -->
+      <button id="testNewUserBtn" class="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30 shadow mt-0.5">
+        <div class="flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-4 h-4 text-amber-400"></i>
+          <span>🆕 Test New User Onboarding</span>
+        </div>
+        <span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono">Guest</span>
+      </button>
+    </div>
+
+    <!-- Conversation History List -->
+    <div class="flex-1 overflow-y-auto px-2 py-3 space-y-1">
+      <div class="px-3 pb-1 text-[11px] font-medium text-gray-400 uppercase tracking-wider">Recent Sessions</div>
+      <div id="sessionList" class="space-y-0.5">
+        <!-- Sessions will be injected here dynamically -->
+        <div class="text-xs text-gray-500 px-3 py-4 text-center">Loading conversation history...</div>
+      </div>
+    </div>
+
+    <!-- User Profile & Account Summary Card -->
+    <div class="p-3 border-t border-bordercol bg-[#141414]">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-90 transition group" id="userProfileBtn" title="Click to Switch Customer Persona / Test Guest Onboarding">
+          <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow transition" id="userAvatar">
+            AS
+          </div>
+          <div class="min-w-0">
+            <div class="text-sm font-medium text-white truncate flex items-center gap-1.5" id="customerName">
+              <span>Amanpreet Singh</span>
+              <i data-lucide="chevron-up" class="w-3.5 h-3.5 text-gray-400 group-hover:text-emerald-400 transition"></i>
+            </div>
+            <div class="text-[11px] text-gray-400 flex items-center gap-1.5">
+              <span id="customerExtId">CUST-1001</span>
+              <span>•</span>
+              <span class="text-emerald-400 font-medium" id="quickBalance">₹100,000</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="switchPersonaBtn" title="Switch User Persona" class="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-inputbg transition">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          </button>
+          <button id="refreshBalanceBtn" title="Refresh Balance" class="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-inputbg transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN CHAT CONTAINER ================= -->
+  <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-chatbg">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-14 border-b border-bordercol flex items-center justify-between px-4 bg-chatbg/80 backdrop-blur z-20">
+      <div class="flex items-center gap-3">
+        <button id="toggleSidebarBtn" class="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-inputbg">
+          <i data-lucide="panel-left" class="w-5 h-5"></i>
+        </button>
+        <div class="flex items-center gap-2">
+          <span id="activeThreadTitle" class="text-sm font-medium text-gray-200 truncate max-w-xs">New Conversation</span>
+          <span id="activeWorkflowBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-inputbg text-gray-300 border border-bordercol flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="activeWorkflowText">Supervisor Agent</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- System Health Indicator -->
+      <div class="flex items-center gap-2 text-xs text-gray-400">
+        <div class="flex items-center gap-1.5 bg-inputbg px-2.5 py-1 rounded-full border border-bordercol">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span class="text-[11px] text-gray-300">PostgreSQL + Redis Connected</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scrollable Messages Area -->
+    <div id="messagesContainer" class="flex-1 overflow-y-auto px-4 py-6 md:px-8 space-y-6">
+
+      <!-- Proactive Financial Guardian Alert Banner -->
+      <div id="guardianBanner" class="hidden max-w-2xl mx-auto p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3 text-xs mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0">
+            <i data-lucide="bell-ring" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="font-semibold text-amber-300">Financial Guardian Nudge</div>
+            <div id="guardianText" class="text-gray-300">Upcoming electricity bill due soon.</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="guardianActionBtn" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-lg transition shadow text-[11px]">
+            Pay Now
+          </button>
+          <button onclick="document.getElementById('guardianBanner').remove()" class="p-1 text-gray-400 hover:text-white rounded">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hero Welcome View (Shown on Empty Chat) -->
+      <div id="heroView" class="max-w-2xl mx-auto my-auto py-8 flex flex-col items-center text-center">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4 shadow-lg">
+          <i data-lucide="bot" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-semibold text-white mb-2" id="heroGreeting">Good day, Amanpreet</h2>
+        <p class="text-sm text-gray-400 max-w-md mb-8" id="heroSubtitle">
+          Your conversation is governed by deterministic policies, fraud scoring, and least-privilege banking security.
+        </p>
+
+        <!-- Quick Action Prompt Chips -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full text-left">
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="What is my current balance?">
+            <div class="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+              <i data-lucide="wallet" class="w-4 h-4"></i>
+              <span>Account Inquiry</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"What is my current balance?"</div>
+          </button>
+
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="Transfer ₹5,000 to Rahul">
+            <div class="flex items-center gap-2 text-sky-400 text-xs font-semibold">
+              <i data-lucide="send" class="w-4 h-4"></i>
+              <span>Money Transfer</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"Transfer ₹5,000 to Rahul"</div>
+          </button>
+
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="Freeze my debit card immediately">
+            <div class="flex items-center gap-2 text-rose-400 text-xs font-semibold">
+              <i data-lucide="credit-card" class="w-4 h-4"></i>
+              <span>Card Security</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"Freeze my debit card immediately"</div>
+          </button>
+
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="What is the EMI for a 5 lakh personal loan for 3 years?">
+            <div class="flex items-center gap-2 text-amber-400 text-xs font-semibold">
+              <i data-lucide="calculator" class="w-4 h-4"></i>
+              <span>Loan Advisory</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"What is the EMI for a 5 lakh loan for 3 years?"</div>
+          </button>
+
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="Pay my electricity bill for Tata Power">
+            <div class="flex items-center gap-2 text-indigo-400 text-xs font-semibold">
+              <i data-lucide="zap" class="w-4 h-4"></i>
+              <span>Utility Bills</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"Pay my electricity bill for Tata Power"</div>
+          </button>
+
+          <button class="prompt-chip p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-inputbg to-inputbg hover:bg-[#3a3a3a] border border-emerald-500/40 transition flex flex-col gap-1 group md:col-span-2 shadow" data-prompt="I want to open a new savings account with NovaBank">
+            <div class="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+              <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i>
+              <span>✨ New Customer Onboarding</span>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30 font-mono ml-auto">No Prior Account Needed</span>
+            </div>
+            <div class="text-sm text-gray-200 font-medium">"I want to open a new savings account with NovaBank"</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Stream -->
+      <div id="messagesList" class="max-w-3xl mx-auto space-y-6 pb-6"></div>
+
+      <!-- Loading / Typing Indicator Bubble -->
+      <div id="typingIndicator" class="max-w-3xl mx-auto hidden flex items-start gap-4">
+        <div class="w-8 h-8 rounded-full bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
+          <i data-lucide="bot" class="w-4 h-4"></i>
+        </div>
+        <div class="bg-bubble border border-bordercol px-4 py-3 rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 typing-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Bottom Input Bar (ChatGPT Style) -->
+    <div class="p-4 bg-chatbg border-t border-bordercol/50">
+      <div class="max-w-3xl mx-auto">
+        <form id="chatForm" class="relative flex items-end bg-inputbg border border-bordercol rounded-2xl shadow-lg focus-within:border-gray-500 transition-colors">
+          <textarea
+            id="messageInput"
+            rows="1"
+            placeholder="Message your AI Banking Assistant..."
+            class="w-full bg-transparent text-gray-100 placeholder-gray-400 resize-none px-4 py-3.5 focus:outline-none text-sm max-h-48 overflow-y-auto"
+          ></textarea>
+
+          <div class="p-2 flex items-center gap-1.5">
+            <button
+              type="button"
+              id="voiceBtn"
+              title="Speak with Voice (Hands-Free)"
+              class="w-8 h-8 rounded-xl bg-[#383838] text-gray-300 hover:text-white hover:bg-[#484848] flex items-center justify-center transition-all shadow"
+            >
+              <i data-lucide="mic" class="w-4 h-4"></i>
+            </button>
+            <button
+              type="submit"
+              id="sendBtn"
+              class="w-8 h-8 rounded-xl bg-white text-black hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-white flex items-center justify-center transition-all disabled:cursor-not-allowed shadow"
+              disabled
+            >
+              <i data-lucide="arrow-up" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </form>
+
+        <p class="text-[11px] text-gray-500 text-center mt-2">
+          Banking AI operates under deterministic compliance. Mutating financial actions require explicit user confirmation.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= PERSONA SWITCHER MODAL ================= -->
+  <div id="personaModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1c1c1c] border border-bordercol rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-bordercol/80 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="users" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-white">Switch Customer Persona</h3>
+            <p class="text-[11px] text-gray-400">Test existing customers or brand new applicant onboarding</p>
+          </div>
+        </div>
+        <button id="closePersonaModal" class="p-1 text-gray-400 hover:text-white rounded hover:bg-inputbg transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2 max-h-72 overflow-y-auto pr-1" id="personaOptions">
+        <!-- Dynamically injected personas -->
+      </div>
+
+      <div class="pt-2 border-t border-bordercol/80 flex items-center gap-2">
+        <input type="text" id="customCustIdInput" placeholder="Or enter Custom Customer ID (e.g. CUST-1002)" class="flex-1 bg-inputbg border border-bordercol rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500">
+        <button id="applyCustomCustBtn" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow transition">Switch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CLIENT JAVASCRIPT ================= -->
+  <script>
+    // State management
+    let currentThreadId = null;
+    let customerExternalId = "CUST-1001";
+    let currentCustomerName = "Amanpreet Singh";
+    let isSending = false;
+
+    // DOM Elements
+    const sessionListEl = document.getElementById("sessionList");
+    const messagesListEl = document.getElementById("messagesList");
+    const messagesContainerEl = document.getElementById("messagesContainer");
+    const heroViewEl = document.getElementById("heroView");
+    const typingIndicatorEl = document.getElementById("typingIndicator");
+    const messageInputEl = document.getElementById("messageInput");
+    const sendBtnEl = document.getElementById("sendBtn");
+    const chatFormEl = document.getElementById("chatForm");
+    const activeThreadTitleEl = document.getElementById("activeThreadTitle");
+    const activeWorkflowBadgeEl = document.getElementById("activeWorkflowBadge");
+    const activeWorkflowTextEl = document.getElementById("activeWorkflowText");
+    const newChatBtnEl = document.getElementById("newChatBtn");
+    const toggleSidebarBtnEl = document.getElementById("toggleSidebarBtn");
+    const sidebarEl = document.getElementById("sidebar");
+    const quickBalanceEl = document.getElementById("quickBalance");
+    const refreshBalanceBtnEl = document.getElementById("refreshBalanceBtn");
+    const testNewUserBtnEl = document.getElementById("testNewUserBtn");
+    const userProfileBtnEl = document.getElementById("userProfileBtn");
+    const switchPersonaBtnEl = document.getElementById("switchPersonaBtn");
+    const personaModalEl = document.getElementById("personaModal");
+    const closePersonaModalEl = document.getElementById("closePersonaModal");
+    const personaOptionsEl = document.getElementById("personaOptions");
+    const customCustIdInputEl = document.getElementById("customCustIdInput");
+    const applyCustomCustBtnEl = document.getElementById("applyCustomCustBtn");
+    const userAvatarEl = document.getElementById("userAvatar");
+    const customerNameEl = document.getElementById("customerName");
+    const customerExtIdEl = document.getElementById("customerExtId");
+    const heroGreetingEl = document.getElementById("heroGreeting");
+    const heroSubtitleEl = document.getElementById("heroSubtitle");
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Auto-resizing textarea
+    messageInputEl.addEventListener("input", () => {
+      messageInputEl.style.height = "auto";
+      messageInputEl.style.height = Math.min(messageInputEl.scrollHeight, 180) + "px";
+      sendBtnEl.disabled = !messageInputEl.value.trim() || isSending;
+    });
+
+    // Enter to submit, Shift+Enter for newline
+    messageInputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (!sendBtnEl.disabled) {
+          chatFormEl.dispatchEvent(new Event("submit"));
+        }
+      }
+    });
+
+    // Sidebar Toggle
+    toggleSidebarBtnEl.addEventListener("click", () => {
+      sidebarEl.classList.toggle("-ml-64");
+      sidebarEl.classList.toggle("md:-ml-72");
+    });
+
+    // New Chat Button
+    newChatBtnEl.addEventListener("click", () => {
+      startNewChat();
+    });
+
+    function startNewChat() {
+      currentThreadId = "TH-" + Math.random().toString(36).substring(2, 12);
+      activeThreadTitleEl.textContent = "New Conversation";
+      activeWorkflowTextEl.textContent = "Supervisor Agent";
+      messagesListEl.innerHTML = "";
+      heroViewEl.style.display = "flex";
+      messageInputEl.value = "";
+      messageInputEl.style.height = "auto";
+      sendBtnEl.disabled = true;
+      highlightActiveSession(null);
+      messageInputEl.focus();
+    }
+
+    // Quick prompt chips
+    document.querySelectorAll(".prompt-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const prompt = chip.getAttribute("data-prompt");
+        messageInputEl.value = prompt;
+        messageInputEl.style.height = "auto";
+        sendBtnEl.disabled = false;
+        chatFormEl.dispatchEvent(new Event("submit"));
+      });
+    });
+
+    // Fetch and update balance badge
+    async function fetchBalance() {
+      if (customerExternalId.startsWith("GUEST") || customerExternalId.startsWith("PROSPECT")) {
+        quickBalanceEl.textContent = "No Account";
+        return;
+      }
+      try {
+        const res = await fetch("/api/v1/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: "What is my balance?",
+            thread_id: "BALANCE-PROBE",
+            customer_external_id: customerExternalId
+          })
+        });
+        const data = await res.json();
+        const match = data.response.match(/₹([0-9,]+(?:\.[0-9]+)?)/);
+        if (match) {
+          quickBalanceEl.textContent = "₹" + match[1];
+        }
+      } catch (err) {
+        console.error("Balance fetch failed", err);
+      }
+    }
+    refreshBalanceBtnEl.addEventListener("click", fetchBalance);
+
+    function updateCurrentCustomer(extId, name, balance = null) {
+      customerExternalId = extId;
+      currentCustomerName = name;
+      customerExtIdEl.textContent = extId;
+      customerNameEl.innerHTML = `<span>${name}</span><i data-lucide="chevron-up" class="w-3.5 h-3.5 text-gray-400"></i>`;
+
+      const initials = name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "CU";
+      userAvatarEl.textContent = initials;
+
+      if (extId.startsWith("GUEST") || extId.startsWith("PROSPECT")) {
+        userAvatarEl.className = "w-9 h-9 rounded-full bg-amber-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow ring-2 ring-amber-400";
+        heroGreetingEl.textContent = "Welcome, New Applicant";
+        heroSubtitleEl.textContent = "You are testing in Guest Onboarding Mode. Open a savings or current account to get started.";
+        quickBalanceEl.textContent = "No Account";
+      } else {
+        userAvatarEl.className = "w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow";
+        heroGreetingEl.textContent = `Good day, ${name.split(" ")[0]}`;
+        heroSubtitleEl.textContent = "Your conversation is governed by deterministic policies, fraud scoring, and least-privilege banking security.";
+        if (balance) {
+          quickBalanceEl.textContent = balance;
+        } else {
+          fetchBalance();
+        }
+      }
+      lucide.createIcons();
+    }
+
+    function switchPersona(extId, name, balance = null) {
+      updateCurrentCustomer(extId, name, balance);
+      startNewChat();
+      loadSessions();
+      if (personaModalEl) personaModalEl.classList.add("hidden");
+    }
+
+    // Persona Modal logic
+    async function openPersonaModal() {
+      personaModalEl.classList.remove("hidden");
+      personaOptionsEl.innerHTML = `<div class="text-xs text-gray-400 text-center py-3">Loading available customer profiles...</div>`;
+      try {
+        const res = await fetch("/api/v1/chat/customers");
+        const data = await res.json();
+        let html = "";
+
+        // 1. Guest applicant option
+        const g = data.guest_prospect;
+        html += `
+          <div class="p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 cursor-pointer flex items-center justify-between transition persona-item" data-ext-id="${g.external_id}" data-name="${g.name}" data-balance="No Account">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-amber-600 text-white font-bold text-xs flex items-center justify-center shadow">
+                GA
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <span>${g.name}</span>
+                  <span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-mono">NEW USER ONBOARDING</span>
+                </div>
+                <div class="text-[10px] text-gray-400">${g.external_id} • Unregistered applicant (KYC Flow)</div>
+              </div>
+            </div>
+            <span class="text-xs text-amber-400 font-semibold flex items-center gap-1">Test ➔</span>
+          </div>
+        `;
+
+        // 2. Existing customers
+        (data.customers || []).forEach(c => {
+          const isCurrent = (c.external_id === customerExternalId);
+          html += `
+            <div class="p-3 rounded-xl border ${isCurrent ? 'border-emerald-500 bg-emerald-950/20' : 'border-bordercol bg-inputbg hover:bg-[#383838]'} cursor-pointer flex items-center justify-between transition persona-item" data-ext-id="${c.external_id}" data-name="${c.name}" data-balance="₹${c.balance.toLocaleString('en-IN')}">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shadow">
+                  ${c.name.split(" ").map(n=>n[0]).join("")}
+                </div>
+                <div>
+                  <div class="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <span>${c.name}</span>
+                    ${isCurrent ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-mono">ACTIVE</span>' : ''}
+                  </div>
+                  <div class="text-[10px] text-gray-400">${c.external_id} • Balance: ₹${c.balance.toLocaleString('en-IN')}</div>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+            </div>
+          `;
+        });
+
+        personaOptionsEl.innerHTML = html;
+        lucide.createIcons();
+
+        document.querySelectorAll(".persona-item").forEach(item => {
+          item.addEventListener("click", () => {
+            const extId = item.dataset.extId;
+            const name = item.dataset.name;
+            const balance = item.dataset.balance;
+            switchPersona(extId, name, balance);
+          });
+        });
+      } catch (err) {
+        personaOptionsEl.innerHTML = `<div class="text-xs text-rose-400 text-center py-2">Failed to load customer profiles</div>`;
+      }
+    }
+
+    if (userProfileBtnEl) userProfileBtnEl.addEventListener("click", openPersonaModal);
+    if (switchPersonaBtnEl) switchPersonaBtnEl.addEventListener("click", openPersonaModal);
+    if (closePersonaModalEl) closePersonaModalEl.addEventListener("click", () => personaModalEl.classList.add("hidden"));
+    if (applyCustomCustBtnEl) {
+      applyCustomCustBtnEl.addEventListener("click", () => {
+        const val = customCustIdInputEl.value.trim();
+        if (val) {
+          switchPersona(val, "Customer " + val, null);
+        }
+      });
+    }
+
+    // Test New User Onboarding Button in sidebar
+    if (testNewUserBtnEl) {
+      testNewUserBtnEl.addEventListener("click", () => {
+        switchPersona("GUEST-PROSPECT", "Guest Applicant", "No Account");
+        messageInputEl.value = "I want to open a new savings account with NovaBank";
+        messageInputEl.style.height = "auto";
+        sendBtnEl.disabled = false;
+        chatFormEl.dispatchEvent(new Event("submit"));
+      });
+    }
+
+    // Load Chat Sessions List
+    async function loadSessions() {
+      try {
+        const res = await fetch(`/api/v1/chat/sessions?customer_external_id=${customerExternalId}`);
+        const data = await res.json();
+        renderSessionList(data.sessions || []);
+      } catch (err) {
+        console.error("Failed to load sessions", err);
+        sessionListEl.innerHTML = `<div class="text-xs text-red-400 px-3 py-2">Error loading history</div>`;
+      }
+    }
+
+    function renderSessionList(sessions) {
+      if (!sessions.length) {
+        sessionListEl.innerHTML = `<div class="text-xs text-gray-500 px-3 py-4 text-center">No past chats yet</div>`;
+        return;
+      }
+
+      sessionListEl.innerHTML = "";
+      sessions.forEach(s => {
+        const item = document.createElement("div");
+        item.className = "group flex items-center justify-between px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-inputbg cursor-pointer transition relative";
+        item.dataset.threadId = s.thread_id;
+
+        if (s.thread_id === currentThreadId) {
+          item.classList.add("bg-inputbg", "text-white");
+        }
+
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <i data-lucide="message-square" class="w-3.5 h-3.5 text-gray-400 flex-shrink-0"></i>
+            <span class="truncate text-xs">${escapeHtml(s.title)}</span>
+          </div>
+          <button class="delete-btn opacity-0 group-hover:opacity-100 p-1 hover:text-rose-400 text-gray-500 transition rounded" title="Delete thread">
+            <i data-lucide="trash-2" class="w-3 h-3"></i>
+          </button>
+        `;
+
+        // Click session to load
+        item.addEventListener("click", (e) => {
+          if (e.target.closest(".delete-btn")) return;
+          loadSessionMessages(s.thread_id, s.title);
+        });
+
+        // Delete session
+        const delBtn = item.querySelector(".delete-btn");
+        delBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete conversation "${s.title}"?`)) {
+            await deleteSession(s.thread_id);
+          }
+        });
+
+        sessionListEl.appendChild(item);
+      });
+      lucide.createIcons();
+    }
+
+    function highlightActiveSession(threadId) {
+      document.querySelectorAll("#sessionList > div").forEach(el => {
+        if (el.dataset.threadId === threadId) {
+          el.classList.add("bg-inputbg", "text-white");
+        } else {
+          el.classList.remove("bg-inputbg", "text-white");
+        }
+      });
+    }
+
+    // Load messages for a specific session
+    async function loadSessionMessages(threadId, title) {
+      currentThreadId = threadId;
+      activeThreadTitleEl.textContent = title;
+      highlightActiveSession(threadId);
+      heroViewEl.style.display = "none";
+      messagesListEl.innerHTML = "";
+
+      try {
+        const res = await fetch(`/api/v1/chat/sessions/${threadId}?customer_external_id=${customerExternalId}`);
+        const data = await res.json();
+
+        data.messages.forEach(msg => {
+          appendMessage(msg.role, msg.content, msg.active_workflow, msg.requires_action, msg.action_payload, msg.widget_type, msg.widget_data);
+        });
+        scrollToBottom();
+      } catch (err) {
+        console.error("Failed to load thread messages", err);
+      }
+    }
+
+    async function deleteSession(threadId) {
+      try {
+        await fetch(`/api/v1/chat/sessions/${threadId}?customer_external_id=${customerExternalId}`, { method: "DELETE" });
+        if (currentThreadId === threadId) {
+          startNewChat();
+        }
+        await loadSessions();
+      } catch (err) {
+        console.error("Failed to delete session", err);
+      }
+    }
+
+    // Form submission
+    chatFormEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const message = messageInputEl.value.trim();
+      if (!message || isSending) return;
+
+      if (!currentThreadId) {
+        currentThreadId = "TH-" + Math.random().toString(36).substring(2, 12);
+      }
+
+      // Hide hero view
+      heroViewEl.style.display = "none";
+
+      // Append user message
+      appendMessage("user", message);
+      messageInputEl.value = "";
+      messageInputEl.style.height = "auto";
+      sendBtnEl.disabled = true;
+      isSending = true;
+
+      // Show typing indicator
+      typingIndicatorEl.classList.remove("hidden");
+      scrollToBottom();
+
+      try {
+        const res = await fetch("/api/v1/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: message,
+            thread_id: currentThreadId,
+            customer_external_id: customerExternalId
+          })
+        });
+
+        const data = await res.json();
+        typingIndicatorEl.classList.add("hidden");
+
+        // Update active workflow indicator
+        updateWorkflowBadge(data.active_workflow);
+
+        // Append assistant message with action card and GenUI widgets
+        appendMessage("assistant", data.response, data.active_workflow, data.requires_action, data.action_payload, data.widget_type, data.widget_data);
+
+        // Refresh session list to show new/updated thread
+        await loadSessions();
+        highlightActiveSession(currentThreadId);
+      } catch (err) {
+        typingIndicatorEl.classList.add("hidden");
+        appendMessage("assistant", "⚠️ An error occurred communicating with the banking server. Please check your connection.");
+      } finally {
+        isSending = false;
+        sendBtnEl.disabled = !messageInputEl.value.trim();
+        scrollToBottom();
+      }
+    });
+
+    function updateWorkflowBadge(wf) {
+      const labels = {
+        "NONE": "Supervisor Agent",
+        "TRANSFER_MONEY": "Controlled Transfer Agent",
+        "OPEN_ACCOUNT": "Account Opening Agent",
+        "CARD_ACTION": "Cards & Security Agent",
+        "LOAN_ACTION": "Loan Advisory Agent",
+        "PAYMENT_ACTION": "Bill Payments Agent",
+        "SUPPORT": "Customer Support Agent"
+      };
+      activeWorkflowTextEl.textContent = labels[wf] || wf;
+    }
+
+    // Append message bubble
+    function appendMessage(role, text, workflow = "NONE", requiresAction = null, actionPayload = null, widgetType = null, widgetData = null) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "flex items-start gap-3.5 group";
+
+      if (role === "user") {
+        msgDiv.className += " justify-end";
+        msgDiv.innerHTML = `
+          <div class="bg-bubble border border-bordercol px-4 py-2.5 rounded-2xl rounded-tr-none text-sm text-gray-100 max-w-xl shadow leading-relaxed whitespace-pre-wrap">
+            ${escapeHtml(text)}
+          </div>
+          <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 shadow">
+            AS
+          </div>
+        `;
+      } else {
+        const formatted = formatAssistantText(text);
+        let actionHtml = "";
+        let widgetHtml = "";
+
+        // Interactive Confirmation Card (One-click YES / NO buttons)
+        if (requiresAction === "CONFIRMATION_REQUIRED") {
+          actionHtml = `
+            <div class="mt-4 p-3.5 rounded-xl bg-[#1a1a1a] border border-bordercol flex flex-col gap-2.5">
+              <div class="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                <span>Action Confirmation Required</span>
+              </div>
+              <p class="text-xs text-gray-400">Please authorize this transaction to proceed.</p>
+              <div class="flex items-center gap-2 pt-1">
+                <button class="confirm-btn flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  <span>Confirm (Yes)</span>
+                </button>
+                <button class="cancel-btn flex-1 py-2 px-3 bg-[#383838] hover:bg-[#484848] text-gray-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                  <span>Cancel (No)</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        // Generative UI Dynamic In-Chat Widgets
+        if (widgetType === "EMI_SLIDER" && widgetData) {
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-xl bg-[#181818] border border-bordercol flex flex-col gap-3 shadow-lg emi-widget" data-interest="${widgetData.interest_rate || 10.5}">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                  <i data-lucide="sliders" class="w-4 h-4"></i>
+                  <span>Interactive Loan EMI Simulator</span>
+                </div>
+                <span class="text-[11px] text-gray-400 font-mono">${widgetData.interest_rate || 10.5}% p.a.</span>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                  <span class="text-gray-400">Loan Amount:</span>
+                  <span class="font-semibold text-white font-mono amount-display">₹${Number(widgetData.amount || 500000).toLocaleString('en-IN')}</span>
+                </div>
+                <input type="range" min="50000" max="5000000" step="50000" value="${widgetData.amount || 500000}" class="w-full accent-emerald-500 bg-[#2f2f2f] rounded h-1.5 cursor-pointer amount-slider">
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                  <span class="text-gray-400">Tenure:</span>
+                  <span class="font-semibold text-white font-mono tenure-display">${Math.round((widgetData.tenure_months || 36)/12)} Years (${widgetData.tenure_months || 36} mos)</span>
+                </div>
+                <input type="range" min="12" max="60" step="12" value="${widgetData.tenure_months || 36}" class="w-full accent-emerald-500 bg-[#2f2f2f] rounded h-1.5 cursor-pointer tenure-slider">
+              </div>
+
+              <div class="p-3 bg-emerald-950/30 border border-emerald-500/20 rounded-lg flex items-center justify-between mt-1">
+                <div>
+                  <div class="text-[10px] text-gray-400 uppercase tracking-wider">Calculated Monthly EMI</div>
+                  <div class="text-lg font-bold text-emerald-400 font-mono emi-display">₹${Number(widgetData.monthly_emi || 16254).toLocaleString('en-IN', {maximumFractionDigits: 2})}</div>
+                </div>
+                <button class="apply-emi-btn py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow">
+                  <span>Apply Now</span>
+                  <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (widgetType === "TRANSACTION_RECEIPT" && widgetData) {
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-xl bg-[#141414] border border-emerald-500/30 flex flex-col gap-3 shadow-lg receipt-widget">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                  <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                  <span>Official Transaction Receipt</span>
+                </div>
+                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">VERIFIED</span>
+              </div>
+
+              <div class="text-center py-2">
+                <div class="text-2xl font-bold text-white font-mono">₹${Number(widgetData.amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                <div class="text-xs text-gray-400 mt-0.5">${widgetData.type === 'BILL_PAYMENT' ? 'Paid to ' + (widgetData.biller || 'Biller') : 'Transferred to ' + (widgetData.beneficiary || 'Beneficiary')}</div>
+              </div>
+
+              <div class="text-xs space-y-1.5 bg-[#1c1c1c] p-3 rounded-lg font-mono text-gray-300">
+                <div class="flex justify-between">
+                  <span class="text-gray-500 font-sans">Reference:</span>
+                  <span class="text-emerald-400">${widgetData.reference || 'TXN-10092'}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500 font-sans">Source Account:</span>
+                  <span>${widgetData.source_account || '****1234'}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500 font-sans">Status:</span>
+                  <span class="text-emerald-400">COMPLETED</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-end pt-1">
+                <button onclick="window.print()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1.5 py-1 px-2.5 rounded hover:bg-inputbg transition">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                  <span>Print / Save Receipt</span>
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (widgetType === "SPENDING_CHART" && widgetData) {
+          const breakdown = widgetData.breakdown || [];
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-xl bg-[#161616] border border-bordercol flex flex-col gap-3 shadow-lg">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
+                <div class="flex items-center gap-2 text-xs font-semibold text-sky-400">
+                  <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                  <span>Category Expense Distribution</span>
+                </div>
+                <span class="text-xs font-mono font-bold text-white">₹${Number(widgetData.total_spent || 0).toLocaleString('en-IN')}</span>
+              </div>
+
+              <div class="space-y-2.5">
+                ${breakdown.map(b => `
+                  <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                      <span class="text-gray-300">${b.category}</span>
+                      <span class="font-mono text-gray-400">₹${Number(b.amount).toLocaleString('en-IN')} (${b.percentage}%)</span>
+                    </div>
+                    <div class="w-full bg-[#2f2f2f] rounded-full h-1.5 overflow-hidden">
+                      <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-1.5 rounded-full" style="width: ${Math.min(b.percentage, 100)}%"></div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (widgetType === "SUBSCRIPTION_LIST" && widgetData) {
+          const subs = widgetData.subscriptions || [];
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-xl bg-[#161616] border border-bordercol flex flex-col gap-3 shadow-lg">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
+                <div class="flex items-center gap-2 text-xs font-semibold text-purple-400">
+                  <i data-lucide="repeat" class="w-4 h-4"></i>
+                  <span>Recurring Subscriptions Audit</span>
+                </div>
+                <span class="text-xs font-mono font-semibold text-emerald-400">₹${Number(widgetData.total_monthly || 0).toLocaleString('en-IN')}/mo</span>
+              </div>
+
+              <div class="space-y-2">
+                ${subs.map(s => `
+                  <div class="flex items-center justify-between p-2 rounded-lg bg-[#222222] text-xs">
+                    <div>
+                      <div class="font-medium text-white">${s.name}</div>
+                      <div class="text-[11px] text-gray-400">Last paid: ${s.last_paid}</div>
+                    </div>
+                    <div class="text-right">
+                      <div class="font-mono font-semibold text-white">₹${Number(s.amount).toLocaleString('en-IN')}</div>
+                      <span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">${s.status}</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (widgetType === "ACCOUNT_CARD" && widgetData) {
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-950/70 via-[#181818] to-[#121212] border border-emerald-500/40 flex flex-col gap-3 shadow-xl">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                  <i data-lucide="award" class="w-4 h-4"></i>
+                  <span>NovaBank Digital Account Passbook</span>
+                </div>
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono font-bold">ACTIVE & KYC VERIFIED</span>
+              </div>
+
+              <div class="p-3 bg-black/40 rounded-xl border border-bordercol/40 space-y-2 text-xs">
+                <div>
+                  <div class="text-[10px] text-gray-400 font-sans uppercase">Account Number</div>
+                  <div class="text-xl font-bold text-emerald-400 font-mono tracking-wider">${widgetData.account_number}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-1 text-gray-300 font-sans">
+                  <div>
+                    <div class="text-[10px] text-gray-500">Account Holder</div>
+                    <div class="font-semibold text-white text-xs">${widgetData.full_name}</div>
+                  </div>
+                  <div>
+                    <div class="text-[10px] text-gray-500">Customer ID</div>
+                    <div class="font-semibold text-emerald-300 font-mono text-xs">${widgetData.customer_external_id}</div>
+                  </div>
+                  <div>
+                    <div class="text-[10px] text-gray-500">Account Type</div>
+                    <div class="font-semibold text-white text-xs">${widgetData.account_type}</div>
+                  </div>
+                  <div>
+                    <div class="text-[10px] text-gray-500">IFSC Code</div>
+                    <div class="font-semibold text-gray-300 font-mono text-xs">${widgetData.ifsc_code || 'NOVA0001001'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center text-[11px] text-gray-400 pt-1">
+                <span>Branch: ${widgetData.branch || 'NovaBank Digital Branch'}</span>
+                <button class="py-1 px-2.5 bg-inputbg hover:bg-[#383838] text-gray-200 rounded border border-bordercol flex items-center gap-1 transition text-xs" onclick="navigator.clipboard.writeText('${widgetData.account_number}'); alert('Account number copied to clipboard!');">
+                  <i data-lucide="copy" class="w-3 h-3"></i>
+                  <span>Copy Account #</span>
+                </button>
+              </div>
+            </div>
+          `;
+          if (widgetData.customer_external_id && widgetData.full_name) {
+            updateCurrentCustomer(widgetData.customer_external_id, widgetData.full_name, "₹0.00");
+          }
+        }
+
+        msgDiv.innerHTML = `
+          <div class="w-8 h-8 rounded-full bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 max-w-2xl bg-inputbg/50 border border-bordercol px-4 py-3 rounded-2xl rounded-tl-none text-sm text-gray-200 leading-relaxed shadow">
+            <div class="flex items-center justify-between pb-1 text-[11px] text-gray-500">
+              <span>NovaBank Assistant</span>
+              <button class="speak-btn text-gray-400 hover:text-white p-0.5 rounded transition" title="Read aloud">
+                <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <div class="prose prose-invert max-w-none text-sm space-y-2">${formatted}</div>
+            ${widgetHtml}
+            ${actionHtml}
+          </div>
+        `;
+
+        // Wire TTS speak button
+        const speakBtn = msgDiv.querySelector(".speak-btn");
+        if (speakBtn) {
+          speakBtn.addEventListener("click", () => speakText(text));
+        }
+
+        // Wire dynamic EMI slider recalculation
+        const emiWidget = msgDiv.querySelector(".emi-widget");
+        if (emiWidget) {
+          const amtSlider = emiWidget.querySelector(".amount-slider");
+          const tenureSlider = emiWidget.querySelector(".tenure-slider");
+          const amtDisplay = emiWidget.querySelector(".amount-display");
+          const tenureDisplay = emiWidget.querySelector(".tenure-display");
+          const emiDisplay = emiWidget.querySelector(".emi-display");
+          const applyBtn = emiWidget.querySelector(".apply-emi-btn");
+          const rate = parseFloat(emiWidget.dataset.interest || 10.5);
+
+          function recalculateEmi() {
+            const P = parseFloat(amtSlider.value);
+            const N = parseInt(tenureSlider.value);
+            amtDisplay.textContent = "₹" + P.toLocaleString('en-IN');
+            tenureDisplay.textContent = Math.round(N / 12) + " Years (" + N + " mos)";
+            const r = (rate / 12) / 100;
+            const emi = (P * r * Math.pow(1 + r, N)) / (Math.pow(1 + r, N) - 1);
+            emiDisplay.textContent = "₹" + Math.round(emi).toLocaleString('en-IN');
+          }
+
+          amtSlider.addEventListener("input", recalculateEmi);
+          tenureSlider.addEventListener("input", recalculateEmi);
+
+          if (applyBtn) {
+            applyBtn.addEventListener("click", () => {
+              const P = amtSlider.value;
+              const yrs = Math.round(tenureSlider.value / 12);
+              messageInputEl.value = `Apply for a ${P} personal loan for ${yrs} years`;
+              chatFormEl.dispatchEvent(new Event("submit"));
+            });
+          }
+        }
+
+        // Wire interactive action buttons
+        if (requiresAction === "CONFIRMATION_REQUIRED") {
+          const confirmBtn = msgDiv.querySelector(".confirm-btn");
+          const cancelBtn = msgDiv.querySelector(".cancel-btn");
+          if (confirmBtn) {
+            confirmBtn.addEventListener("click", () => {
+              messageInputEl.value = "Yes";
+              chatFormEl.dispatchEvent(new Event("submit"));
+            });
+          }
+          if (cancelBtn) {
+            cancelBtn.addEventListener("click", () => {
+              messageInputEl.value = "No";
+              chatFormEl.dispatchEvent(new Event("submit"));
+            });
+          }
+        }
+      }
+
+      messagesListEl.appendChild(msgDiv);
+      lucide.createIcons();
+      scrollToBottom();
+    }
+
+    function formatAssistantText(text) {
+      let escaped = escapeHtml(text);
+      // Bold text **text**
+      escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
+      // Bullet points
+      escaped = escaped.replace(/^• (.*?)$/gm, '<li class="ml-4 list-disc">$1</li>');
+      // Newlines
+      escaped = escaped.replace(/\n/g, '<br/>');
+      return escaped;
+    }
+
+    function escapeHtml(string) {
+      const entityMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return String(string).replace(/[&<>"']/g, (s) => entityMap[s]);
+    }
+
+    function scrollToBottom() {
+      messagesContainerEl.scrollTop = messagesContainerEl.scrollHeight;
+    }
+
+    // Text to Speech (TTS)
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const clean = text.replace(/\*\*/g, "").replace(/•/g, "").replace(/[#_]/g, "");
+        const utterance = new SpeechSynthesisUtterance(clean);
+        utterance.rate = 1.0;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Voice Input (Web Speech API)
+    const voiceBtnEl = document.getElementById("voiceBtn");
+    let recognition = null;
+    let isRecording = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN';
+
+      recognition.onstart = () => {
+        isRecording = true;
+        voiceBtnEl.classList.add("bg-red-500", "text-white", "animate-pulse");
+        voiceBtnEl.classList.remove("bg-[#383838]", "text-gray-300");
+        messageInputEl.placeholder = "Listening... speak now...";
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        messageInputEl.value = transcript;
+        messageInputEl.style.height = "auto";
+        sendBtnEl.disabled = !transcript.trim();
+      };
+
+      recognition.onerror = (event) => {
+        console.warn("Speech recognition error:", event.error);
+        stopVoice();
+      };
+
+      recognition.onend = () => {
+        stopVoice();
+        if (messageInputEl.value.trim() && !isSending) {
+          chatFormEl.dispatchEvent(new Event("submit"));
+        }
+      };
+
+      function stopVoice() {
+        isRecording = false;
+        voiceBtnEl.classList.remove("bg-red-500", "text-white", "animate-pulse");
+        voiceBtnEl.classList.add("bg-[#383838]", "text-gray-300");
+        messageInputEl.placeholder = "Message your AI Banking Assistant...";
+      }
+
+      voiceBtnEl.addEventListener("click", () => {
+        if (isRecording) {
+          recognition.stop();
+        } else {
+          recognition.start();
+        }
+      });
+    } else {
+      if (voiceBtnEl) voiceBtnEl.style.display = "none";
+    }
+
+    // Proactive Guardian Alerts
+    async function loadGuardianAlerts() {
+      try {
+        const res = await fetch(`/api/v1/chat/guardian?customer_external_id=${customerExternalId}`);
+        const data = await res.json();
+        if (data.alerts && data.alerts.length > 0) {
+          const alert = data.alerts[0];
+          const banner = document.getElementById("guardianBanner");
+          if (banner) {
+            banner.classList.remove("hidden");
+            document.getElementById("guardianText").textContent = alert.message;
+            const actBtn = document.getElementById("guardianActionBtn");
+            if (actBtn) {
+              actBtn.onclick = () => {
+                messageInputEl.value = alert.action_prompt;
+                chatFormEl.dispatchEvent(new Event("submit"));
+              };
+            }
+          }
+        }
+      } catch (err) {
+        console.debug("Guardian alerts load skipped", err);
+      }
+    }
+
+    // Initialize page
+    startNewChat();
+    loadSessions();
+    loadGuardianAlerts();
+  </script>
+</body>
+</html>
+
