@@ -1,0 +1,3957 @@
+{
+  "nodes": [
+    {
+      "id": "security/guardrails_engine.py",
+      "label": "guardrails_engine.py",
+      "type": "file",
+      "community": "security",
+      "summary": "Enterprise Guardrails AI Engine for Input & Output Validation.",
+      "functions": [
+        "validate",
+        "validate",
+        "validate",
+        "__init__",
+        "validate_input",
+        "sanitize_output"
+      ],
+      "classes": [
+        "BankingPromptInjectionValidator",
+        "BankingSecretsDetectorValidator",
+        "BankingPIIAnonymizerValidator",
+        "EnterpriseGuardrails"
+      ],
+      "lines": 153,
+      "in_degree": 3,
+      "out_degree": 1,
+      "total_degree": 4
+    },
+    {
+      "id": "security/tracing.py",
+      "label": "tracing.py",
+      "type": "file",
+      "community": "security",
+      "summary": "End-to-end request correlation and distributed tracing middleware.",
+      "functions": [
+        "dispatch"
+      ],
+      "classes": [
+        "CorrelationIdMiddleware"
+      ],
+      "lines": 35,
+      "in_degree": 1,
+      "out_degree": 0,
+      "total_degree": 1
+    },
+    {
+      "id": "security/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "security",
+      "summary": "Module security/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "security/guardrails.py",
+      "label": "guardrails.py",
+      "type": "file",
+      "community": "security",
+      "summary": "Prompt injection guardrails and output validation module.",
+      "functions": [
+        "inspect_input",
+        "inspect_output"
+      ],
+      "classes": [
+        "SecurityViolationError"
+      ],
+      "lines": 62,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "security/headers.py",
+      "label": "headers.py",
+      "type": "file",
+      "community": "security",
+      "summary": "HTTP Security Headers Middleware for Enterprise Banking API.",
+      "functions": [
+        "dispatch"
+      ],
+      "classes": [
+        "SecurityHeadersMiddleware"
+      ],
+      "lines": 39,
+      "in_degree": 1,
+      "out_degree": 0,
+      "total_degree": 1
+    },
+    {
+      "id": "security/pii.py",
+      "label": "pii.py",
+      "type": "file",
+      "community": "security",
+      "summary": "PII (Personally Identifiable Information) masking and sanitization module.",
+      "functions": [
+        "mask_card_number",
+        "mask_account_number",
+        "mask_email",
+        "mask_phone",
+        "sanitize_pii"
+      ],
+      "classes": [],
+      "lines": 41,
+      "in_degree": 12,
+      "out_degree": 0,
+      "total_degree": 12
+    },
+    {
+      "id": "database/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Module database/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "database/connection.py",
+      "label": "connection.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Database connection engine and session management using SQLAlchemy Asyncio.",
+      "functions": [
+        "get_db_session"
+      ],
+      "classes": [],
+      "lines": 51,
+      "in_degree": 16,
+      "out_degree": 1,
+      "total_degree": 17
+    },
+    {
+      "id": "database/init_db.py",
+      "label": "init_db.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Database initialization and mock seed data script.",
+      "functions": [
+        "init_database",
+        "seed_mock_data",
+        "main"
+      ],
+      "classes": [],
+      "lines": 182,
+      "in_degree": 10,
+      "out_degree": 2,
+      "total_degree": 12
+    },
+    {
+      "id": "database/repositories/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Module database/repositories/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "database/repositories/banking_repo.py",
+      "label": "banking_repo.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Repository for secure, parameterized data access on Customers, Accounts, and Transactions.",
+      "functions": [
+        "__init__",
+        "get_customer_by_external_id",
+        "get_accounts_by_customer_id",
+        "get_account_by_number",
+        "get_beneficiaries",
+        "find_beneficiary_by_name",
+        "get_transaction_by_ref",
+        "get_recent_transactions",
+        "create_transaction",
+        "update_account_balance",
+        "create_review_task",
+        "log_audit",
+        "get_cards_by_customer_id",
+        "get_card_by_id",
+        "find_card_by_type",
+        "update_card_status",
+        "update_card_limits",
+        "create_support_ticket",
+        "search_knowledge_docs",
+        "create_loan_application",
+        "get_loan_applications",
+        "get_billers",
+        "find_biller_by_name",
+        "create_bill_payment",
+        "get_bill_payments_by_customer",
+        "get_or_create_session",
+        "update_session",
+        "list_sessions_by_customer",
+        "get_session",
+        "delete_session",
+        "save_chat_message",
+        "get_messages_by_thread"
+      ],
+      "classes": [
+        "BankingRepository"
+      ],
+      "lines": 382,
+      "in_degree": 22,
+      "out_degree": 1,
+      "total_degree": 23
+    },
+    {
+      "id": "database/models/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Module database/models/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "database/models/banking.py",
+      "label": "banking.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Enterprise Banking Domain Models.",
+      "functions": [
+        "utc_now"
+      ],
+      "classes": [
+        "Customer",
+        "Account",
+        "Beneficiary",
+        "Transaction",
+        "HumanReviewTask",
+        "AuditLog",
+        "Card",
+        "LoanApplication",
+        "Biller",
+        "BillPayment",
+        "SupportTicket",
+        "KnowledgeDoc",
+        "ChatSession",
+        "ChatMessage"
+      ],
+      "lines": 232,
+      "in_degree": 8,
+      "out_degree": 1,
+      "total_degree": 9
+    },
+    {
+      "id": "policies/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "policies",
+      "summary": "Module policies/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "policies/transfer.py",
+      "label": "transfer.py",
+      "type": "file",
+      "community": "policies",
+      "summary": "Deterministic Transfer Policy Engine.",
+      "functions": [
+        "evaluate"
+      ],
+      "classes": [
+        "PolicyDecision",
+        "PolicyEvaluationResult",
+        "TransferPolicyEngine"
+      ],
+      "lines": 72,
+      "in_degree": 2,
+      "out_degree": 2,
+      "total_degree": 4
+    },
+    {
+      "id": "services/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "services",
+      "summary": "Module services/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "services/core_banking/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "services",
+      "summary": "Module services/core_banking/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "services/cache/cache_engine.py",
+      "label": "cache_engine.py",
+      "type": "file",
+      "community": "services",
+      "summary": "Redis-backed multi-tier semantic and query caching engine with transactional invalidation.",
+      "functions": [
+        "__init__",
+        "_get_client",
+        "normalize_query",
+        "_generate_key",
+        "get_intent_signature",
+        "is_cacheable",
+        "get_cached_response",
+        "set_cached_response",
+        "invalidate_customer_cache"
+      ],
+      "classes": [
+        "CacheEngine"
+      ],
+      "lines": 187,
+      "in_degree": 4,
+      "out_degree": 1,
+      "total_degree": 5
+    },
+    {
+      "id": "services/fraud/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "services",
+      "summary": "Module services/fraud/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "services/fraud/engine.py",
+      "label": "engine.py",
+      "type": "file",
+      "community": "services",
+      "summary": "Deterministic Fraud Detection & Risk Scoring Engine.",
+      "functions": [
+        "evaluate_transfer"
+      ],
+      "classes": [
+        "FraudAssessment",
+        "FraudEngine"
+      ],
+      "lines": 69,
+      "in_degree": 3,
+      "out_degree": 0,
+      "total_degree": 3
+    },
+    {
+      "id": "services/resilience/circuit_breaker.py",
+      "label": "circuit_breaker.py",
+      "type": "file",
+      "community": "services",
+      "summary": "Circuit Breaker pattern for external banking integrations and LLM resilience.",
+      "functions": [
+        "__init__",
+        "call",
+        "_on_success",
+        "_on_failure"
+      ],
+      "classes": [
+        "CircuitState",
+        "CircuitBreakerOpenException",
+        "CircuitBreaker"
+      ],
+      "lines": 91,
+      "in_degree": 1,
+      "out_degree": 0,
+      "total_degree": 1
+    },
+    {
+      "id": "tools/base.py",
+      "label": "base.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Base classes and schemas for banking tools.",
+      "functions": [],
+      "classes": [
+        "ToolResult"
+      ],
+      "lines": 12,
+      "in_degree": 10,
+      "out_degree": 0,
+      "total_degree": 10
+    },
+    {
+      "id": "tools/payments.py",
+      "label": "payments.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Bill Payments and UPI banking tools.",
+      "functions": [
+        "get_billers_tool",
+        "fetch_bill_tool",
+        "pay_bill_tool",
+        "verify_upi_id_tool"
+      ],
+      "classes": [],
+      "lines": 132,
+      "in_degree": 2,
+      "out_degree": 3,
+      "total_degree": 5
+    },
+    {
+      "id": "tools/loans.py",
+      "label": "loans.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Loan calculation, eligibility, and application banking tools.",
+      "functions": [
+        "compute_emi",
+        "calculate_emi_tool",
+        "check_loan_eligibility_tool",
+        "apply_loan_tool",
+        "get_loan_status_tool"
+      ],
+      "classes": [],
+      "lines": 132,
+      "in_degree": 2,
+      "out_degree": 2,
+      "total_degree": 4
+    },
+    {
+      "id": "tools/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Module tools/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "tools/insights.py",
+      "label": "insights.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Personal Financial Management (PFM) and Spending Insights tools.",
+      "functions": [
+        "get_spending_insights_tool",
+        "detect_subscriptions_tool",
+        "predict_cashflow_tool"
+      ],
+      "classes": [],
+      "lines": 137,
+      "in_degree": 2,
+      "out_degree": 2,
+      "total_degree": 4
+    },
+    {
+      "id": "tools/knowledge.py",
+      "label": "knowledge.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Knowledge base RAG search and customer support escalation tools.",
+      "functions": [
+        "search_knowledge_base_tool",
+        "create_support_ticket_tool"
+      ],
+      "classes": [],
+      "lines": 62,
+      "in_degree": 2,
+      "out_degree": 2,
+      "total_degree": 4
+    },
+    {
+      "id": "tools/accounts.py",
+      "label": "accounts.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Account-related banking tools.",
+      "functions": [
+        "get_balance",
+        "get_accounts"
+      ],
+      "classes": [],
+      "lines": 60,
+      "in_degree": 1,
+      "out_degree": 3,
+      "total_degree": 4
+    },
+    {
+      "id": "tools/transfers.py",
+      "label": "transfers.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Transfer execution banking tools.",
+      "functions": [
+        "initiate_transfer"
+      ],
+      "classes": [],
+      "lines": 69,
+      "in_degree": 1,
+      "out_degree": 4,
+      "total_degree": 5
+    },
+    {
+      "id": "tools/cards.py",
+      "label": "cards.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Card operations banking tools.",
+      "functions": [
+        "get_cards",
+        "freeze_card",
+        "unfreeze_card",
+        "set_card_limits",
+        "replace_card"
+      ],
+      "classes": [],
+      "lines": 127,
+      "in_degree": 2,
+      "out_degree": 3,
+      "total_degree": 5
+    },
+    {
+      "id": "tools/transactions.py",
+      "label": "transactions.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Transaction inquiry and history banking tools.",
+      "functions": [
+        "get_transaction",
+        "get_recent_transactions"
+      ],
+      "classes": [],
+      "lines": 51,
+      "in_degree": 1,
+      "out_degree": 3,
+      "total_degree": 4
+    },
+    {
+      "id": "tools/beneficiaries.py",
+      "label": "beneficiaries.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Beneficiary-related banking tools.",
+      "functions": [
+        "get_beneficiary",
+        "list_beneficiaries"
+      ],
+      "classes": [],
+      "lines": 49,
+      "in_degree": 1,
+      "out_degree": 3,
+      "total_degree": 4
+    },
+    {
+      "id": "agents/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Module agents/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "agents/state.py",
+      "label": "state.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Global LangGraph State definitions for Multi-Agent Enterprise Banking (Phases 1-7).",
+      "functions": [],
+      "classes": [
+        "AccountWorkflowData",
+        "TransferWorkflowData",
+        "CardWorkflowData",
+        "LoanWorkflowData",
+        "PaymentWorkflowData",
+        "SupportWorkflowData",
+        "InsightsWorkflowData",
+        "BankingSessionState"
+      ],
+      "lines": 134,
+      "in_degree": 8,
+      "out_degree": 0,
+      "total_degree": 8
+    },
+    {
+      "id": "agents/card/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Card Operations and Security Subgraph.",
+      "functions": [
+        "card_action_node"
+      ],
+      "classes": [],
+      "lines": 114,
+      "in_degree": 1,
+      "out_degree": 6,
+      "total_degree": 7
+    },
+    {
+      "id": "agents/insights/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Personal Financial Management (PFM) and Insights Subgraph.",
+      "functions": [
+        "execute_insights_node"
+      ],
+      "classes": [],
+      "lines": 140,
+      "in_degree": 2,
+      "out_degree": 5,
+      "total_degree": 7
+    },
+    {
+      "id": "agents/loan/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Loan Advisory, EMI Calculation, and Application Subgraph.",
+      "functions": [
+        "loan_orchestrator_node"
+      ],
+      "classes": [],
+      "lines": 165,
+      "in_degree": 1,
+      "out_degree": 5,
+      "total_degree": 6
+    },
+    {
+      "id": "agents/supervisor/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Module agents/supervisor/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "agents/supervisor/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Master Banking Supervisor StateGraph with 6-Agent Orchestration & Context Switching.",
+      "functions": [
+        "supervisor_router_node",
+        "supervisor_dispatch"
+      ],
+      "classes": [],
+      "lines": 422,
+      "in_degree": 5,
+      "out_degree": 14,
+      "total_degree": 19
+    },
+    {
+      "id": "agents/payment/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Bill Payments and UPI Subgraph with Two-Phase Confirmation and Idempotency.",
+      "functions": [
+        "payment_orchestrator_node"
+      ],
+      "classes": [],
+      "lines": 173,
+      "in_degree": 1,
+      "out_degree": 6,
+      "total_degree": 7
+    },
+    {
+      "id": "agents/support/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Module agents/support/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "agents/support/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Customer Support Subgraph with Transaction Dispute Analysis, Grounded RAG, and Human Escalation.",
+      "functions": [
+        "support_orchestrator_node"
+      ],
+      "classes": [],
+      "lines": 181,
+      "in_degree": 1,
+      "out_degree": 6,
+      "total_degree": 7
+    },
+    {
+      "id": "agents/account/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Module agents/account/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "agents/account/validators.py",
+      "label": "validators.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Production KYC & Customer Profile Validators for Account Onboarding.",
+      "functions": [
+        "validate_email",
+        "validate_date_of_birth",
+        "validate_full_name"
+      ],
+      "classes": [],
+      "lines": 212,
+      "in_degree": 2,
+      "out_degree": 0,
+      "total_degree": 2
+    },
+    {
+      "id": "agents/account/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Conversational Account Opening Subgraph and State Machine.",
+      "functions": [
+        "collect_profile_node",
+        "kyc_aml_node",
+        "aml_hitl_node",
+        "create_account_node",
+        "route_after_profile",
+        "route_after_aml"
+      ],
+      "classes": [],
+      "lines": 290,
+      "in_degree": 1,
+      "out_degree": 5,
+      "total_degree": 6
+    },
+    {
+      "id": "agents/transfer/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Module agents/transfer/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "agents/transfer/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Controlled Money Transfer Subgraph with Policy Engine, Fraud Scoring, and HITL Checkpoints.",
+      "functions": [
+        "resolve_transfer_entities_node",
+        "parallel_fraud_scoring_node",
+        "parallel_aml_screening_node",
+        "parallel_ledger_verification_node",
+        "policy_aggregator_node",
+        "transfer_hitl_node",
+        "execute_transfer_node",
+        "route_after_resolve",
+        "route_after_policy"
+      ],
+      "classes": [],
+      "lines": 380,
+      "in_degree": 2,
+      "out_degree": 8,
+      "total_degree": 10
+    },
+    {
+      "id": "gateway/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Module gateway/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "gateway/rate_limit/limiter.py",
+      "label": "limiter.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Production-grade Redis sliding-window rate limiter middleware.",
+      "functions": [
+        "__init__",
+        "_get_client",
+        "is_rate_limited",
+        "__init__",
+        "dispatch"
+      ],
+      "classes": [
+        "SlidingWindowRateLimiter",
+        "RateLimitMiddleware"
+      ],
+      "lines": 116,
+      "in_degree": 2,
+      "out_degree": 1,
+      "total_degree": 3
+    },
+    {
+      "id": "gateway/tool_gateway/idempotency.py",
+      "label": "idempotency.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Distributed idempotency manager for financial operations using Redis.",
+      "functions": [
+        "__init__",
+        "__init__",
+        "_get_client",
+        "acquire_lock",
+        "set_result",
+        "get_result"
+      ],
+      "classes": [
+        "IdempotencyConflictError",
+        "IdempotencyManager"
+      ],
+      "lines": 99,
+      "in_degree": 2,
+      "out_degree": 1,
+      "total_degree": 3
+    },
+    {
+      "id": "gateway/tool_gateway/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Module gateway/tool_gateway/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "gateway/tool_gateway/gateway.py",
+      "label": "gateway.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Central Tool Gateway enforcing RBAC, Idempotency, and Audit logging across all banking capabilities.",
+      "functions": [
+        "execute_tool"
+      ],
+      "classes": [
+        "ToolGateway"
+      ],
+      "lines": 242,
+      "in_degree": 7,
+      "out_degree": 14,
+      "total_degree": 21
+    },
+    {
+      "id": "gateway/tool_gateway/permissions.py",
+      "label": "permissions.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Agent Identity and Tool Permission Engine (RBAC).",
+      "functions": [
+        "authorize_tool_execution"
+      ],
+      "classes": [
+        "AgentRole",
+        "ToolPermissionDeniedError"
+      ],
+      "lines": 91,
+      "in_degree": 9,
+      "out_degree": 0,
+      "total_degree": 9
+    },
+    {
+      "id": "gateway/llm/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Module gateway/llm/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "gateway/llm/router.py",
+      "label": "router.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Production-grade Intent Classification, Sub-Intent Resolution, and Entity Extraction Engine.",
+      "functions": [
+        "_extract_mention",
+        "_extract_entities_fast",
+        "route_banking_request",
+        "classify_intent",
+        "extract_slots"
+      ],
+      "classes": [
+        "BankingIntent",
+        "BankingSubIntent",
+        "ExtractedEntities",
+        "BankingRoutingDecision"
+      ],
+      "lines": 461,
+      "in_degree": 2,
+      "out_degree": 1,
+      "total_degree": 3
+    },
+    {
+      "id": "gateway/llm/client.py",
+      "label": "client.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "LLM Gateway Client supporting Groq (ChatGroq) with fallback and metrics tracking.",
+      "functions": [
+        "__init__",
+        "__init__",
+        "invoke_chat",
+        "_deterministic_fallback"
+      ],
+      "classes": [
+        "LLMResponse",
+        "LLMGateway"
+      ],
+      "lines": 291,
+      "in_degree": 1,
+      "out_degree": 1,
+      "total_degree": 2
+    },
+    {
+      "id": "tests/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Module tests/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "tests/unit/test_new_user_onboarding.py",
+      "label": "test_new_user_onboarding.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Tests for New User Onboarding & Persona Switching.",
+      "functions": [
+        "setup_db",
+        "test_list_customers_and_guest_prospect",
+        "test_new_user_onboarding_multi_turn_flow"
+      ],
+      "classes": [],
+      "lines": 86,
+      "in_degree": 0,
+      "out_degree": 4,
+      "total_degree": 4
+    },
+    {
+      "id": "tests/unit/test_production_intent_router.py",
+      "label": "test_production_intent_router.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Tests for Production-Grade Intent Classification, Sub-Intents, Negation, Typo Resilience, and Semantic Cache.",
+      "functions": [
+        "test_negation_detection_prevents_accidental_action",
+        "test_typo_and_slang_resilience",
+        "test_granular_dispute_sub_intents",
+        "test_unauthorized_fraud_support_flow",
+        "test_temporal_date_time_query",
+        "test_agent_at_mention_routing",
+        "test_layered_semantic_caching"
+      ],
+      "classes": [],
+      "lines": 217,
+      "in_degree": 0,
+      "out_degree": 3,
+      "total_degree": 3
+    },
+    {
+      "id": "tests/unit/test_api_endpoints.py",
+      "label": "test_api_endpoints.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Integration tests for FastAPI REST endpoints.",
+      "functions": [
+        "setup_db",
+        "test_health_and_readiness_endpoints",
+        "test_chat_balance_inquiry_api",
+        "test_chat_prompt_injection_guardrail_api",
+        "test_admin_review_queue_api"
+      ],
+      "classes": [],
+      "lines": 70,
+      "in_degree": 0,
+      "out_degree": 2,
+      "total_degree": 2
+    },
+    {
+      "id": "tests/unit/test_tool_gateway.py",
+      "label": "test_tool_gateway.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Unit tests for Tool Gateway RBAC and Idempotency manager.",
+      "functions": [
+        "test_agent_rbac_permitted_actions",
+        "test_agent_rbac_denies_unauthorized_action",
+        "test_idempotency_manager_lock_and_replay"
+      ],
+      "classes": [],
+      "lines": 50,
+      "in_degree": 0,
+      "out_degree": 2,
+      "total_degree": 2
+    },
+    {
+      "id": "tests/unit/test_phase567_tools.py",
+      "label": "test_phase567_tools.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Unit tests for Cards, Loans, Bill Payments, and Knowledge RAG tools.",
+      "functions": [
+        "setup_db",
+        "test_emi_mathematical_precision",
+        "test_card_freeze_and_unfreeze",
+        "test_card_spending_limit_update",
+        "test_loan_eligibility_check",
+        "test_bill_fetch_and_upi_verification",
+        "test_knowledge_base_search_and_ticket_creation"
+      ],
+      "classes": [],
+      "lines": 119,
+      "in_degree": 0,
+      "out_degree": 7,
+      "total_degree": 7
+    },
+    {
+      "id": "tests/unit/test_insights_and_genui.py",
+      "label": "test_insights_and_genui.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Test suite for Next-Gen Capabilities: PFM Insights, Generative UI Widgets, and Guardian.",
+      "functions": [
+        "setup_db",
+        "test_spending_insights_tool",
+        "test_subscriptions_tool",
+        "test_cashflow_prediction_tool",
+        "test_insights_subgraph_produces_genui_widget",
+        "test_chat_api_loan_inquiry_returns_emi_slider_widget",
+        "test_guardian_alerts_endpoint"
+      ],
+      "classes": [],
+      "lines": 114,
+      "in_degree": 0,
+      "out_degree": 6,
+      "total_degree": 6
+    },
+    {
+      "id": "tests/unit/test_chat_history.py",
+      "label": "test_chat_history.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Unit and API integration tests for ChatGPT-style session management and history.",
+      "functions": [
+        "setup_db",
+        "test_serve_chat_ui",
+        "test_session_lifecycle_and_history"
+      ],
+      "classes": [],
+      "lines": 83,
+      "in_degree": 0,
+      "out_degree": 2,
+      "total_degree": 2
+    },
+    {
+      "id": "tests/unit/test_account_validation.py",
+      "label": "test_account_validation.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Unit and Integration Tests for Production KYC & Profile Validation in Account Opening.",
+      "functions": [
+        "setup_db",
+        "test_validate_email_unit",
+        "test_validate_date_of_birth_unit",
+        "test_validate_full_name_unit",
+        "test_kyc_rejection_and_recovery_flow"
+      ],
+      "classes": [],
+      "lines": 151,
+      "in_degree": 0,
+      "out_degree": 3,
+      "total_degree": 3
+    },
+    {
+      "id": "tests/unit/test_cache_and_memory.py",
+      "label": "test_cache_and_memory.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Test suite for Redis Query Cache, Entity Memory, Rate Limiting, and Resilience.",
+      "functions": [
+        "test_redis_query_cache_lifecycle",
+        "test_cross_subgraph_entity_memory_pronoun_resolution",
+        "test_sliding_window_rate_limiter",
+        "test_correlation_id_header_middleware",
+        "test_circuit_breaker_fail_fast_and_recovery",
+        "failing_service"
+      ],
+      "classes": [],
+      "lines": 133,
+      "in_degree": 0,
+      "out_degree": 5,
+      "total_degree": 5
+    },
+    {
+      "id": "tests/unit/test_policies.py",
+      "label": "test_policies.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Unit tests for Deterministic Transfer Policy Engine and Fraud Engine.",
+      "functions": [
+        "test_fraud_engine_low_risk",
+        "test_fraud_engine_high_risk_signals",
+        "test_policy_inactive_account_denied",
+        "test_policy_high_fraud_triggers_hitl",
+        "test_policy_requires_user_confirmation",
+        "test_policy_allow_when_all_rules_pass"
+      ],
+      "classes": [],
+      "lines": 82,
+      "in_degree": 0,
+      "out_degree": 2,
+      "total_degree": 2
+    },
+    {
+      "id": "tests/security/test_security.py",
+      "label": "test_security.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Security tests for Prompt Injection defense and PII masking.",
+      "functions": [
+        "test_prompt_injection_detection",
+        "test_benign_banking_queries_allowed",
+        "test_pii_masking"
+      ],
+      "classes": [],
+      "lines": 57,
+      "in_degree": 0,
+      "out_degree": 2,
+      "total_degree": 2
+    },
+    {
+      "id": "tests/security/test_guardrails_ai.py",
+      "label": "test_guardrails_ai.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Test suite for Guardrails AI (guardrails-ai) Enterprise Integration.",
+      "functions": [
+        "test_guardrails_ai_prompt_injection_rejection",
+        "test_guardrails_ai_secrets_detection",
+        "test_guardrails_ai_output_pii_anonymization",
+        "test_guardrails_ai_benign_banking_queries_allowed"
+      ],
+      "classes": [],
+      "lines": 65,
+      "in_degree": 0,
+      "out_degree": 1,
+      "total_degree": 1
+    },
+    {
+      "id": "tests/graph/test_fanout_architecture.py",
+      "label": "test_fanout_architecture.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "Module tests/graph/test_fanout_architecture.py",
+      "functions": [
+        "setup_db",
+        "test_transfer_subgraph_parallel_fanout_execution",
+        "test_transfer_subgraph_parallel_aml_block_fanout"
+      ],
+      "classes": [],
+      "lines": 83,
+      "in_degree": 0,
+      "out_degree": 2,
+      "total_degree": 2
+    },
+    {
+      "id": "tests/graph/test_graphs.py",
+      "label": "test_graphs.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "StateGraph execution tests for Supervisor and Subgraphs with MemorySaver checkpointer.",
+      "functions": [
+        "setup_test_db",
+        "test_account_opening_multi_turn_flow",
+        "test_money_transfer_flow_and_confirmation",
+        "test_context_switching_balance_during_account_opening",
+        "test_support_declined_transaction_inquiry"
+      ],
+      "classes": [],
+      "lines": 130,
+      "in_degree": 0,
+      "out_degree": 2,
+      "total_degree": 2
+    },
+    {
+      "id": "tests/graph/test_phase567_graphs.py",
+      "label": "test_phase567_graphs.py",
+      "type": "file",
+      "community": "tests",
+      "summary": "StateGraph execution tests for Cards, Loans, Bill Payments, and Support RAG.",
+      "functions": [
+        "setup_test_db",
+        "test_card_freeze_conversation",
+        "test_loan_emi_calculation_conversation",
+        "test_bill_payment_multi_turn_confirmation",
+        "test_knowledge_rag_faq_conversation",
+        "test_human_support_ticket_escalation"
+      ],
+      "classes": [],
+      "lines": 111,
+      "in_degree": 0,
+      "out_degree": 2,
+      "total_degree": 2
+    },
+    {
+      "id": "apps/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Module apps/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "apps/api/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Module apps/api/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "apps/api/config.py",
+      "label": "config.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Application configuration using Pydantic Settings.",
+      "functions": [],
+      "classes": [
+        "Settings"
+      ],
+      "lines": 45,
+      "in_degree": 8,
+      "out_degree": 0,
+      "total_degree": 8
+    },
+    {
+      "id": "apps/api/main.py",
+      "label": "main.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Main FastAPI Application for Enterprise AI Banking Agent.",
+      "functions": [
+        "lifespan",
+        "global_exception_handler",
+        "serve_chat_ui"
+      ],
+      "classes": [],
+      "lines": 91,
+      "in_degree": 6,
+      "out_degree": 8,
+      "total_degree": 14
+    },
+    {
+      "id": "apps/api/routes/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Module apps/api/routes/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "apps/api/routes/health.py",
+      "label": "health.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Health and readiness check endpoints.",
+      "functions": [
+        "health_check",
+        "readiness_check"
+      ],
+      "classes": [],
+      "lines": 47,
+      "in_degree": 1,
+      "out_degree": 2,
+      "total_degree": 3
+    },
+    {
+      "id": "apps/api/routes/admin.py",
+      "label": "admin.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Admin & Bank Officer HITL (Human-in-the-Loop) Review API.",
+      "functions": [
+        "list_pending_reviews",
+        "act_on_review"
+      ],
+      "classes": [],
+      "lines": 88,
+      "in_degree": 1,
+      "out_degree": 4,
+      "total_degree": 5
+    },
+    {
+      "id": "apps/api/routes/chat.py",
+      "label": "chat.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Chat conversation and ChatGPT-style session history API endpoints.",
+      "functions": [
+        "get_banking_app",
+        "handle_chat",
+        "_handle_chat_impl",
+        "list_chat_sessions",
+        "get_session_history",
+        "delete_chat_session",
+        "get_financial_guardian_alerts",
+        "list_available_customers"
+      ],
+      "classes": [],
+      "lines": 406,
+      "in_degree": 2,
+      "out_degree": 8,
+      "total_degree": 10
+    },
+    {
+      "id": "apps/api/schemas/__init__.py",
+      "label": "__init__.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Module apps/api/schemas/__init__.py",
+      "functions": [],
+      "classes": [],
+      "lines": 0,
+      "in_degree": 0,
+      "out_degree": 0,
+      "total_degree": 0
+    },
+    {
+      "id": "apps/api/schemas/chat.py",
+      "label": "chat.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Pydantic schemas for Chat and Admin HITL API.",
+      "functions": [],
+      "classes": [
+        "ChatRequest",
+        "ChatResponse",
+        "HITLReviewActionRequest",
+        "HITLReviewResponse",
+        "ChatMessageResponse",
+        "ChatSessionResponse",
+        "SessionListResponse",
+        "SessionDetailResponse"
+      ],
+      "lines": 63,
+      "in_degree": 2,
+      "out_degree": 0,
+      "total_degree": 2
+    }
+  ],
+  "edges": [
+    {
+      "source": "security/guardrails_engine.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "database/connection.py",
+      "target": "apps/api/config.py",
+      "relation": "imports"
+    },
+    {
+      "source": "database/init_db.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "database/init_db.py",
+      "target": "database/models/banking.py",
+      "relation": "imports"
+    },
+    {
+      "source": "database/repositories/banking_repo.py",
+      "target": "database/models/banking.py",
+      "relation": "imports"
+    },
+    {
+      "source": "database/models/banking.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "policies/transfer.py",
+      "target": "apps/api/config.py",
+      "relation": "imports"
+    },
+    {
+      "source": "policies/transfer.py",
+      "target": "services/fraud/engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "services/cache/cache_engine.py",
+      "target": "apps/api/config.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/payments.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/payments.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/payments.py",
+      "target": "database/models/banking.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/loans.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/loans.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/insights.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/insights.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/knowledge.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/knowledge.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/accounts.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/accounts.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/accounts.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/transfers.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/transfers.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/transfers.py",
+      "target": "database/models/banking.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/transfers.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/cards.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/cards.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/cards.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/transactions.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/transactions.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/transactions.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/beneficiaries.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/beneficiaries.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tools/beneficiaries.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/card/graph.py",
+      "target": "agents/state.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/card/graph.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/card/graph.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/card/graph.py",
+      "target": "gateway/tool_gateway/gateway.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/card/graph.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/card/graph.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/insights/graph.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/insights/graph.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/insights/graph.py",
+      "target": "gateway/tool_gateway/gateway.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/insights/graph.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/insights/graph.py",
+      "target": "agents/state.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/loan/graph.py",
+      "target": "agents/state.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/loan/graph.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/loan/graph.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/loan/graph.py",
+      "target": "gateway/tool_gateway/gateway.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/loan/graph.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "agents/state.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "agents/account/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "agents/transfer/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "agents/card/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "agents/loan/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "agents/payment/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "agents/support/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "agents/insights/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "gateway/llm/router.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "gateway/tool_gateway/gateway.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/supervisor/graph.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/payment/graph.py",
+      "target": "agents/state.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/payment/graph.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/payment/graph.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/payment/graph.py",
+      "target": "gateway/tool_gateway/gateway.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/payment/graph.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/payment/graph.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/support/graph.py",
+      "target": "agents/state.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/support/graph.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/support/graph.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/support/graph.py",
+      "target": "gateway/tool_gateway/gateway.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/support/graph.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/support/graph.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/account/graph.py",
+      "target": "agents/state.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/account/graph.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/account/graph.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/account/graph.py",
+      "target": "database/models/banking.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/account/graph.py",
+      "target": "agents/account/validators.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/transfer/graph.py",
+      "target": "agents/state.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/transfer/graph.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/transfer/graph.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/transfer/graph.py",
+      "target": "gateway/tool_gateway/gateway.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/transfer/graph.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/transfer/graph.py",
+      "target": "services/fraud/engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/transfer/graph.py",
+      "target": "policies/transfer.py",
+      "relation": "imports"
+    },
+    {
+      "source": "agents/transfer/graph.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/rate_limit/limiter.py",
+      "target": "apps/api/config.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/idempotency.py",
+      "target": "apps/api/config.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "gateway/tool_gateway/idempotency.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/base.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/accounts.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/beneficiaries.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/transfers.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/transactions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/cards.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/loans.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/payments.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/knowledge.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "tools/insights.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/tool_gateway/gateway.py",
+      "target": "services/cache/cache_engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/llm/router.py",
+      "target": "gateway/llm/client.py",
+      "relation": "imports"
+    },
+    {
+      "source": "gateway/llm/client.py",
+      "target": "apps/api/config.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_new_user_onboarding.py",
+      "target": "apps/api/main.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_new_user_onboarding.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_new_user_onboarding.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_new_user_onboarding.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_production_intent_router.py",
+      "target": "gateway/llm/router.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_production_intent_router.py",
+      "target": "services/cache/cache_engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_production_intent_router.py",
+      "target": "agents/supervisor/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_api_endpoints.py",
+      "target": "apps/api/main.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_api_endpoints.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_tool_gateway.py",
+      "target": "gateway/tool_gateway/permissions.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_tool_gateway.py",
+      "target": "gateway/tool_gateway/idempotency.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_phase567_tools.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_phase567_tools.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_phase567_tools.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_phase567_tools.py",
+      "target": "tools/cards.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_phase567_tools.py",
+      "target": "tools/loans.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_phase567_tools.py",
+      "target": "tools/payments.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_phase567_tools.py",
+      "target": "tools/knowledge.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_insights_and_genui.py",
+      "target": "apps/api/main.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_insights_and_genui.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_insights_and_genui.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_insights_and_genui.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_insights_and_genui.py",
+      "target": "tools/insights.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_insights_and_genui.py",
+      "target": "agents/insights/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_chat_history.py",
+      "target": "apps/api/main.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_chat_history.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_account_validation.py",
+      "target": "apps/api/main.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_account_validation.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_account_validation.py",
+      "target": "agents/account/validators.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_cache_and_memory.py",
+      "target": "apps/api/main.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_cache_and_memory.py",
+      "target": "services/cache/cache_engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_cache_and_memory.py",
+      "target": "gateway/rate_limit/limiter.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_cache_and_memory.py",
+      "target": "services/resilience/circuit_breaker.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_cache_and_memory.py",
+      "target": "agents/supervisor/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_policies.py",
+      "target": "services/fraud/engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/unit/test_policies.py",
+      "target": "policies/transfer.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/security/test_security.py",
+      "target": "security/guardrails_engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/security/test_security.py",
+      "target": "security/pii.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/security/test_guardrails_ai.py",
+      "target": "security/guardrails_engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/graph/test_fanout_architecture.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/graph/test_fanout_architecture.py",
+      "target": "agents/transfer/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/graph/test_graphs.py",
+      "target": "agents/supervisor/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/graph/test_graphs.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/graph/test_phase567_graphs.py",
+      "target": "agents/supervisor/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "tests/graph/test_phase567_graphs.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/main.py",
+      "target": "apps/api/config.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/main.py",
+      "target": "apps/api/routes/chat.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/main.py",
+      "target": "apps/api/routes/admin.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/main.py",
+      "target": "apps/api/routes/health.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/main.py",
+      "target": "security/headers.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/main.py",
+      "target": "security/tracing.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/main.py",
+      "target": "gateway/rate_limit/limiter.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/main.py",
+      "target": "database/init_db.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/health.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/health.py",
+      "target": "apps/api/config.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/admin.py",
+      "target": "apps/api/schemas/chat.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/admin.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/admin.py",
+      "target": "database/models/banking.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/admin.py",
+      "target": "apps/api/routes/chat.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/chat.py",
+      "target": "apps/api/schemas/chat.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/chat.py",
+      "target": "agents/supervisor/graph.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/chat.py",
+      "target": "security/guardrails_engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/chat.py",
+      "target": "services/cache/cache_engine.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/chat.py",
+      "target": "database/connection.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/chat.py",
+      "target": "database/repositories/banking_repo.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/chat.py",
+      "target": "database/models/banking.py",
+      "relation": "imports"
+    },
+    {
+      "source": "apps/api/routes/chat.py",
+      "target": "database/models/banking.py",
+      "relation": "imports"
+    }
+  ],
+  "god_nodes": [
+    {
+      "id": "database/repositories/banking_repo.py",
+      "label": "banking_repo.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Repository for secure, parameterized data access on Customers, Accounts, and Transactions.",
+      "functions": [
+        "__init__",
+        "get_customer_by_external_id",
+        "get_accounts_by_customer_id",
+        "get_account_by_number",
+        "get_beneficiaries",
+        "find_beneficiary_by_name",
+        "get_transaction_by_ref",
+        "get_recent_transactions",
+        "create_transaction",
+        "update_account_balance",
+        "create_review_task",
+        "log_audit",
+        "get_cards_by_customer_id",
+        "get_card_by_id",
+        "find_card_by_type",
+        "update_card_status",
+        "update_card_limits",
+        "create_support_ticket",
+        "search_knowledge_docs",
+        "create_loan_application",
+        "get_loan_applications",
+        "get_billers",
+        "find_biller_by_name",
+        "create_bill_payment",
+        "get_bill_payments_by_customer",
+        "get_or_create_session",
+        "update_session",
+        "list_sessions_by_customer",
+        "get_session",
+        "delete_session",
+        "save_chat_message",
+        "get_messages_by_thread"
+      ],
+      "classes": [
+        "BankingRepository"
+      ],
+      "lines": 382,
+      "in_degree": 22,
+      "out_degree": 1,
+      "total_degree": 23
+    },
+    {
+      "id": "gateway/tool_gateway/gateway.py",
+      "label": "gateway.py",
+      "type": "file",
+      "community": "gateway",
+      "summary": "Central Tool Gateway enforcing RBAC, Idempotency, and Audit logging across all banking capabilities.",
+      "functions": [
+        "execute_tool"
+      ],
+      "classes": [
+        "ToolGateway"
+      ],
+      "lines": 242,
+      "in_degree": 7,
+      "out_degree": 14,
+      "total_degree": 21
+    },
+    {
+      "id": "agents/supervisor/graph.py",
+      "label": "graph.py",
+      "type": "file",
+      "community": "agents",
+      "summary": "Master Banking Supervisor StateGraph with 6-Agent Orchestration & Context Switching.",
+      "functions": [
+        "supervisor_router_node",
+        "supervisor_dispatch"
+      ],
+      "classes": [],
+      "lines": 422,
+      "in_degree": 5,
+      "out_degree": 14,
+      "total_degree": 19
+    },
+    {
+      "id": "database/connection.py",
+      "label": "connection.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Database connection engine and session management using SQLAlchemy Asyncio.",
+      "functions": [
+        "get_db_session"
+      ],
+      "classes": [],
+      "lines": 51,
+      "in_degree": 16,
+      "out_degree": 1,
+      "total_degree": 17
+    },
+    {
+      "id": "apps/api/main.py",
+      "label": "main.py",
+      "type": "file",
+      "community": "apps",
+      "summary": "Main FastAPI Application for Enterprise AI Banking Agent.",
+      "functions": [
+        "lifespan",
+        "global_exception_handler",
+        "serve_chat_ui"
+      ],
+      "classes": [],
+      "lines": 91,
+      "in_degree": 6,
+      "out_degree": 8,
+      "total_degree": 14
+    },
+    {
+      "id": "security/pii.py",
+      "label": "pii.py",
+      "type": "file",
+      "community": "security",
+      "summary": "PII (Personally Identifiable Information) masking and sanitization module.",
+      "functions": [
+        "mask_card_number",
+        "mask_account_number",
+        "mask_email",
+        "mask_phone",
+        "sanitize_pii"
+      ],
+      "classes": [],
+      "lines": 41,
+      "in_degree": 12,
+      "out_degree": 0,
+      "total_degree": 12
+    },
+    {
+      "id": "database/init_db.py",
+      "label": "init_db.py",
+      "type": "file",
+      "community": "database",
+      "summary": "Database initialization and mock seed data script.",
+      "functions": [
+        "init_database",
+        "seed_mock_data",
+        "main"
+      ],
+      "classes": [],
+      "lines": 182,
+      "in_degree": 10,
+      "out_degree": 2,
+      "total_degree": 12
+    },
+    {
+      "id": "tools/base.py",
+      "label": "base.py",
+      "type": "file",
+      "community": "tools",
+      "summary": "Base classes and schemas for banking tools.",
+      "functions": [],
+      "classes": [
+        "ToolResult"
+      ],
+      "lines": 12,
+      "in_degree": 10,
+      "out_degree": 0,
+      "total_degree": 10
+    }
+  ],
+  "file_stats": {
+    "security/guardrails_engine.py": {
+      "lines": 153,
+      "functions": [
+        "validate",
+        "validate",
+        "validate",
+        "__init__",
+        "validate_input",
+        "sanitize_output"
+      ],
+      "classes": [
+        "BankingPromptInjectionValidator",
+        "BankingSecretsDetectorValidator",
+        "BankingPIIAnonymizerValidator",
+        "EnterpriseGuardrails"
+      ],
+      "imports": [
+        "os",
+        "re",
+        "typing",
+        "warnings",
+        "guardrails",
+        "guardrails.validator_base",
+        "guardrails.errors",
+        "security.pii",
+        "structlog"
+      ],
+      "community": "security",
+      "summary": "Enterprise Guardrails AI Engine for Input & Output Validation."
+    },
+    "security/tracing.py": {
+      "lines": 35,
+      "functions": [
+        "dispatch"
+      ],
+      "classes": [
+        "CorrelationIdMiddleware"
+      ],
+      "imports": [
+        "uuid",
+        "starlette.middleware.base",
+        "starlette.requests",
+        "starlette.responses",
+        "structlog"
+      ],
+      "community": "security",
+      "summary": "End-to-end request correlation and distributed tracing middleware."
+    },
+    "security/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "security",
+      "summary": "Module security/__init__.py"
+    },
+    "security/guardrails.py": {
+      "lines": 62,
+      "functions": [
+        "inspect_input",
+        "inspect_output"
+      ],
+      "classes": [
+        "SecurityViolationError"
+      ],
+      "imports": [
+        "re",
+        "typing"
+      ],
+      "community": "security",
+      "summary": "Prompt injection guardrails and output validation module."
+    },
+    "security/headers.py": {
+      "lines": 39,
+      "functions": [
+        "dispatch"
+      ],
+      "classes": [
+        "SecurityHeadersMiddleware"
+      ],
+      "imports": [
+        "starlette.middleware.base",
+        "starlette.requests",
+        "starlette.responses"
+      ],
+      "community": "security",
+      "summary": "HTTP Security Headers Middleware for Enterprise Banking API."
+    },
+    "security/pii.py": {
+      "lines": 41,
+      "functions": [
+        "mask_card_number",
+        "mask_account_number",
+        "mask_email",
+        "mask_phone",
+        "sanitize_pii"
+      ],
+      "classes": [],
+      "imports": [
+        "re"
+      ],
+      "community": "security",
+      "summary": "PII (Personally Identifiable Information) masking and sanitization module."
+    },
+    "database/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "database",
+      "summary": "Module database/__init__.py"
+    },
+    "database/connection.py": {
+      "lines": 51,
+      "functions": [
+        "get_db_session"
+      ],
+      "classes": [],
+      "imports": [
+        "os",
+        "typing",
+        "sqlalchemy.ext.asyncio",
+        "sqlalchemy.pool",
+        "sqlalchemy.orm",
+        "apps.api.config"
+      ],
+      "community": "database",
+      "summary": "Database connection engine and session management using SQLAlchemy Asyncio."
+    },
+    "database/init_db.py": {
+      "lines": 182,
+      "functions": [
+        "init_database",
+        "seed_mock_data",
+        "main"
+      ],
+      "classes": [],
+      "imports": [
+        "asyncio",
+        "datetime",
+        "sqlalchemy",
+        "database.connection",
+        "database.models.banking",
+        "sqlalchemy"
+      ],
+      "community": "database",
+      "summary": "Database initialization and mock seed data script."
+    },
+    "database/repositories/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "database",
+      "summary": "Module database/repositories/__init__.py"
+    },
+    "database/repositories/banking_repo.py": {
+      "lines": 382,
+      "functions": [
+        "__init__",
+        "get_customer_by_external_id",
+        "get_accounts_by_customer_id",
+        "get_account_by_number",
+        "get_beneficiaries",
+        "find_beneficiary_by_name",
+        "get_transaction_by_ref",
+        "get_recent_transactions",
+        "create_transaction",
+        "update_account_balance",
+        "create_review_task",
+        "log_audit",
+        "get_cards_by_customer_id",
+        "get_card_by_id",
+        "find_card_by_type",
+        "update_card_status",
+        "update_card_limits",
+        "create_support_ticket",
+        "search_knowledge_docs",
+        "create_loan_application",
+        "get_loan_applications",
+        "get_billers",
+        "find_biller_by_name",
+        "create_bill_payment",
+        "get_bill_payments_by_customer",
+        "get_or_create_session",
+        "update_session",
+        "list_sessions_by_customer",
+        "get_session",
+        "delete_session",
+        "save_chat_message",
+        "get_messages_by_thread"
+      ],
+      "classes": [
+        "BankingRepository"
+      ],
+      "imports": [
+        "typing",
+        "datetime",
+        "sqlalchemy",
+        "sqlalchemy.ext.asyncio",
+        "database.models.banking",
+        "sqlalchemy",
+        "sqlalchemy"
+      ],
+      "community": "database",
+      "summary": "Repository for secure, parameterized data access on Customers, Accounts, and Transactions."
+    },
+    "database/models/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "database",
+      "summary": "Module database/models/__init__.py"
+    },
+    "database/models/banking.py": {
+      "lines": 232,
+      "functions": [
+        "utc_now"
+      ],
+      "classes": [
+        "Customer",
+        "Account",
+        "Beneficiary",
+        "Transaction",
+        "HumanReviewTask",
+        "AuditLog",
+        "Card",
+        "LoanApplication",
+        "Biller",
+        "BillPayment",
+        "SupportTicket",
+        "KnowledgeDoc",
+        "ChatSession",
+        "ChatMessage"
+      ],
+      "imports": [
+        "datetime",
+        "typing",
+        "sqlalchemy",
+        "sqlalchemy.orm",
+        "database.connection"
+      ],
+      "community": "database",
+      "summary": "Enterprise Banking Domain Models."
+    },
+    "policies/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "policies",
+      "summary": "Module policies/__init__.py"
+    },
+    "policies/transfer.py": {
+      "lines": 72,
+      "functions": [
+        "evaluate"
+      ],
+      "classes": [
+        "PolicyDecision",
+        "PolicyEvaluationResult",
+        "TransferPolicyEngine"
+      ],
+      "imports": [
+        "enum",
+        "typing",
+        "pydantic",
+        "apps.api.config",
+        "services.fraud.engine"
+      ],
+      "community": "policies",
+      "summary": "Deterministic Transfer Policy Engine."
+    },
+    "services/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "services",
+      "summary": "Module services/__init__.py"
+    },
+    "services/core_banking/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "services",
+      "summary": "Module services/core_banking/__init__.py"
+    },
+    "services/cache/cache_engine.py": {
+      "lines": 187,
+      "functions": [
+        "__init__",
+        "_get_client",
+        "normalize_query",
+        "_generate_key",
+        "get_intent_signature",
+        "is_cacheable",
+        "get_cached_response",
+        "set_cached_response",
+        "invalidate_customer_cache"
+      ],
+      "classes": [
+        "CacheEngine"
+      ],
+      "imports": [
+        "json",
+        "re",
+        "hashlib",
+        "typing",
+        "redis.asyncio",
+        "apps.api.config",
+        "structlog"
+      ],
+      "community": "services",
+      "summary": "Redis-backed multi-tier semantic and query caching engine with transactional invalidation."
+    },
+    "services/fraud/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "services",
+      "summary": "Module services/fraud/__init__.py"
+    },
+    "services/fraud/engine.py": {
+      "lines": 69,
+      "functions": [
+        "evaluate_transfer"
+      ],
+      "classes": [
+        "FraudAssessment",
+        "FraudEngine"
+      ],
+      "imports": [
+        "typing",
+        "pydantic"
+      ],
+      "community": "services",
+      "summary": "Deterministic Fraud Detection & Risk Scoring Engine."
+    },
+    "services/resilience/circuit_breaker.py": {
+      "lines": 91,
+      "functions": [
+        "__init__",
+        "call",
+        "_on_success",
+        "_on_failure"
+      ],
+      "classes": [
+        "CircuitState",
+        "CircuitBreakerOpenException",
+        "CircuitBreaker"
+      ],
+      "imports": [
+        "time",
+        "enum",
+        "typing",
+        "structlog"
+      ],
+      "community": "services",
+      "summary": "Circuit Breaker pattern for external banking integrations and LLM resilience."
+    },
+    "tools/base.py": {
+      "lines": 12,
+      "functions": [],
+      "classes": [
+        "ToolResult"
+      ],
+      "imports": [
+        "typing",
+        "pydantic"
+      ],
+      "community": "tools",
+      "summary": "Base classes and schemas for banking tools."
+    },
+    "tools/payments.py": {
+      "lines": 132,
+      "functions": [
+        "get_billers_tool",
+        "fetch_bill_tool",
+        "pay_bill_tool",
+        "verify_upi_id_tool"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "re",
+        "typing",
+        "database.repositories.banking_repo",
+        "tools.base",
+        "database.models.banking"
+      ],
+      "community": "tools",
+      "summary": "Bill Payments and UPI banking tools."
+    },
+    "tools/loans.py": {
+      "lines": 132,
+      "functions": [
+        "compute_emi",
+        "calculate_emi_tool",
+        "check_loan_eligibility_tool",
+        "apply_loan_tool",
+        "get_loan_status_tool"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "math",
+        "typing",
+        "database.repositories.banking_repo",
+        "tools.base"
+      ],
+      "community": "tools",
+      "summary": "Loan calculation, eligibility, and application banking tools."
+    },
+    "tools/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "tools",
+      "summary": "Module tools/__init__.py"
+    },
+    "tools/insights.py": {
+      "lines": 137,
+      "functions": [
+        "get_spending_insights_tool",
+        "detect_subscriptions_tool",
+        "predict_cashflow_tool"
+      ],
+      "classes": [],
+      "imports": [
+        "typing",
+        "datetime",
+        "database.repositories.banking_repo",
+        "tools.base",
+        "structlog"
+      ],
+      "community": "tools",
+      "summary": "Personal Financial Management (PFM) and Spending Insights tools."
+    },
+    "tools/knowledge.py": {
+      "lines": 62,
+      "functions": [
+        "search_knowledge_base_tool",
+        "create_support_ticket_tool"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "typing",
+        "database.repositories.banking_repo",
+        "tools.base"
+      ],
+      "community": "tools",
+      "summary": "Knowledge base RAG search and customer support escalation tools."
+    },
+    "tools/accounts.py": {
+      "lines": 60,
+      "functions": [
+        "get_balance",
+        "get_accounts"
+      ],
+      "classes": [],
+      "imports": [
+        "typing",
+        "database.repositories.banking_repo",
+        "security.pii",
+        "tools.base"
+      ],
+      "community": "tools",
+      "summary": "Account-related banking tools."
+    },
+    "tools/transfers.py": {
+      "lines": 69,
+      "functions": [
+        "initiate_transfer"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "typing",
+        "database.repositories.banking_repo",
+        "security.pii",
+        "database.models.banking",
+        "tools.base"
+      ],
+      "community": "tools",
+      "summary": "Transfer execution banking tools."
+    },
+    "tools/cards.py": {
+      "lines": 127,
+      "functions": [
+        "get_cards",
+        "freeze_card",
+        "unfreeze_card",
+        "set_card_limits",
+        "replace_card"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "typing",
+        "database.repositories.banking_repo",
+        "security.pii",
+        "tools.base"
+      ],
+      "community": "tools",
+      "summary": "Card operations banking tools."
+    },
+    "tools/transactions.py": {
+      "lines": 51,
+      "functions": [
+        "get_transaction",
+        "get_recent_transactions"
+      ],
+      "classes": [],
+      "imports": [
+        "typing",
+        "database.repositories.banking_repo",
+        "security.pii",
+        "tools.base"
+      ],
+      "community": "tools",
+      "summary": "Transaction inquiry and history banking tools."
+    },
+    "tools/beneficiaries.py": {
+      "lines": 49,
+      "functions": [
+        "get_beneficiary",
+        "list_beneficiaries"
+      ],
+      "classes": [],
+      "imports": [
+        "typing",
+        "database.repositories.banking_repo",
+        "security.pii",
+        "tools.base"
+      ],
+      "community": "tools",
+      "summary": "Beneficiary-related banking tools."
+    },
+    "agents/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "agents",
+      "summary": "Module agents/__init__.py"
+    },
+    "agents/state.py": {
+      "lines": 134,
+      "functions": [],
+      "classes": [
+        "AccountWorkflowData",
+        "TransferWorkflowData",
+        "CardWorkflowData",
+        "LoanWorkflowData",
+        "PaymentWorkflowData",
+        "SupportWorkflowData",
+        "InsightsWorkflowData",
+        "BankingSessionState"
+      ],
+      "imports": [
+        "typing",
+        "typing_extensions",
+        "operator",
+        "langchain_core.messages"
+      ],
+      "community": "agents",
+      "summary": "Global LangGraph State definitions for Multi-Agent Enterprise Banking (Phases 1-7)."
+    },
+    "agents/card/graph.py": {
+      "lines": 114,
+      "functions": [
+        "card_action_node"
+      ],
+      "classes": [],
+      "imports": [
+        "re",
+        "typing",
+        "langchain_core.messages",
+        "langgraph.graph",
+        "agents.state",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "gateway.tool_gateway.gateway",
+        "gateway.tool_gateway.permissions",
+        "security.pii",
+        "structlog"
+      ],
+      "community": "agents",
+      "summary": "Card Operations and Security Subgraph."
+    },
+    "agents/insights/graph.py": {
+      "lines": 140,
+      "functions": [
+        "execute_insights_node"
+      ],
+      "classes": [],
+      "imports": [
+        "typing",
+        "langgraph.graph",
+        "langchain_core.messages",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "gateway.tool_gateway.gateway",
+        "gateway.tool_gateway.permissions",
+        "agents.state",
+        "structlog"
+      ],
+      "community": "agents",
+      "summary": "Personal Financial Management (PFM) and Insights Subgraph."
+    },
+    "agents/loan/graph.py": {
+      "lines": 165,
+      "functions": [
+        "loan_orchestrator_node"
+      ],
+      "classes": [],
+      "imports": [
+        "re",
+        "typing",
+        "langchain_core.messages",
+        "langgraph.graph",
+        "agents.state",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "gateway.tool_gateway.gateway",
+        "gateway.tool_gateway.permissions",
+        "structlog"
+      ],
+      "community": "agents",
+      "summary": "Loan Advisory, EMI Calculation, and Application Subgraph."
+    },
+    "agents/supervisor/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "agents",
+      "summary": "Module agents/supervisor/__init__.py"
+    },
+    "agents/supervisor/graph.py": {
+      "lines": 422,
+      "functions": [
+        "supervisor_router_node",
+        "supervisor_dispatch"
+      ],
+      "classes": [],
+      "imports": [
+        "typing",
+        "langchain_core.messages",
+        "langgraph.graph",
+        "agents.state",
+        "agents.account.graph",
+        "agents.transfer.graph",
+        "agents.card.graph",
+        "agents.loan.graph",
+        "agents.payment.graph",
+        "agents.support.graph",
+        "agents.insights.graph",
+        "gateway.llm.router",
+        "gateway.tool_gateway.gateway",
+        "gateway.tool_gateway.permissions",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "security.pii",
+        "structlog",
+        "datetime"
+      ],
+      "community": "agents",
+      "summary": "Master Banking Supervisor StateGraph with 6-Agent Orchestration & Context Switching."
+    },
+    "agents/payment/graph.py": {
+      "lines": 173,
+      "functions": [
+        "payment_orchestrator_node"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "re",
+        "typing",
+        "langchain_core.messages",
+        "langgraph.graph",
+        "agents.state",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "gateway.tool_gateway.gateway",
+        "gateway.tool_gateway.permissions",
+        "security.pii",
+        "structlog"
+      ],
+      "community": "agents",
+      "summary": "Bill Payments and UPI Subgraph with Two-Phase Confirmation and Idempotency."
+    },
+    "agents/support/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "agents",
+      "summary": "Module agents/support/__init__.py"
+    },
+    "agents/support/graph.py": {
+      "lines": 181,
+      "functions": [
+        "support_orchestrator_node"
+      ],
+      "classes": [],
+      "imports": [
+        "re",
+        "typing",
+        "langchain_core.messages",
+        "langgraph.graph",
+        "agents.state",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "gateway.tool_gateway.gateway",
+        "gateway.tool_gateway.permissions",
+        "security.pii",
+        "structlog"
+      ],
+      "community": "agents",
+      "summary": "Customer Support Subgraph with Transaction Dispute Analysis, Grounded RAG, and Human Escalation."
+    },
+    "agents/account/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "agents",
+      "summary": "Module agents/account/__init__.py"
+    },
+    "agents/account/validators.py": {
+      "lines": 212,
+      "functions": [
+        "validate_email",
+        "validate_date_of_birth",
+        "validate_full_name"
+      ],
+      "classes": [],
+      "imports": [
+        "re",
+        "datetime",
+        "typing"
+      ],
+      "community": "agents",
+      "summary": "Production KYC & Customer Profile Validators for Account Onboarding."
+    },
+    "agents/account/graph.py": {
+      "lines": 290,
+      "functions": [
+        "collect_profile_node",
+        "kyc_aml_node",
+        "aml_hitl_node",
+        "create_account_node",
+        "route_after_profile",
+        "route_after_aml"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "typing",
+        "langchain_core.messages",
+        "langgraph.graph",
+        "langgraph.types",
+        "agents.state",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "database.models.banking",
+        "sqlalchemy",
+        "agents.account.validators",
+        "structlog"
+      ],
+      "community": "agents",
+      "summary": "Conversational Account Opening Subgraph and State Machine."
+    },
+    "agents/transfer/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "agents",
+      "summary": "Module agents/transfer/__init__.py"
+    },
+    "agents/transfer/graph.py": {
+      "lines": 380,
+      "functions": [
+        "resolve_transfer_entities_node",
+        "parallel_fraud_scoring_node",
+        "parallel_aml_screening_node",
+        "parallel_ledger_verification_node",
+        "policy_aggregator_node",
+        "transfer_hitl_node",
+        "execute_transfer_node",
+        "route_after_resolve",
+        "route_after_policy"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "typing",
+        "langchain_core.messages",
+        "langgraph.graph",
+        "langgraph.types",
+        "agents.state",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "gateway.tool_gateway.gateway",
+        "gateway.tool_gateway.permissions",
+        "services.fraud.engine",
+        "policies.transfer",
+        "security.pii",
+        "structlog",
+        "typing"
+      ],
+      "community": "agents",
+      "summary": "Controlled Money Transfer Subgraph with Policy Engine, Fraud Scoring, and HITL Checkpoints."
+    },
+    "gateway/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "gateway",
+      "summary": "Module gateway/__init__.py"
+    },
+    "gateway/rate_limit/limiter.py": {
+      "lines": 116,
+      "functions": [
+        "__init__",
+        "_get_client",
+        "is_rate_limited",
+        "__init__",
+        "dispatch"
+      ],
+      "classes": [
+        "SlidingWindowRateLimiter",
+        "RateLimitMiddleware"
+      ],
+      "imports": [
+        "time",
+        "typing",
+        "redis.asyncio",
+        "fastapi",
+        "starlette.middleware.base",
+        "starlette.responses",
+        "apps.api.config",
+        "structlog"
+      ],
+      "community": "gateway",
+      "summary": "Production-grade Redis sliding-window rate limiter middleware."
+    },
+    "gateway/tool_gateway/idempotency.py": {
+      "lines": 99,
+      "functions": [
+        "__init__",
+        "__init__",
+        "_get_client",
+        "acquire_lock",
+        "set_result",
+        "get_result"
+      ],
+      "classes": [
+        "IdempotencyConflictError",
+        "IdempotencyManager"
+      ],
+      "imports": [
+        "json",
+        "typing",
+        "redis.asyncio",
+        "apps.api.config",
+        "structlog"
+      ],
+      "community": "gateway",
+      "summary": "Distributed idempotency manager for financial operations using Redis."
+    },
+    "gateway/tool_gateway/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "gateway",
+      "summary": "Module gateway/tool_gateway/__init__.py"
+    },
+    "gateway/tool_gateway/gateway.py": {
+      "lines": 242,
+      "functions": [
+        "execute_tool"
+      ],
+      "classes": [
+        "ToolGateway"
+      ],
+      "imports": [
+        "typing",
+        "database.repositories.banking_repo",
+        "gateway.tool_gateway.permissions",
+        "gateway.tool_gateway.idempotency",
+        "tools.base",
+        "tools.accounts",
+        "tools.beneficiaries",
+        "tools.transfers",
+        "tools.transactions",
+        "tools.cards",
+        "tools.loans",
+        "tools.payments",
+        "tools.knowledge",
+        "tools.insights",
+        "structlog",
+        "services.cache.cache_engine"
+      ],
+      "community": "gateway",
+      "summary": "Central Tool Gateway enforcing RBAC, Idempotency, and Audit logging across all banking capabilities."
+    },
+    "gateway/tool_gateway/permissions.py": {
+      "lines": 91,
+      "functions": [
+        "authorize_tool_execution"
+      ],
+      "classes": [
+        "AgentRole",
+        "ToolPermissionDeniedError"
+      ],
+      "imports": [
+        "typing",
+        "enum"
+      ],
+      "community": "gateway",
+      "summary": "Agent Identity and Tool Permission Engine (RBAC)."
+    },
+    "gateway/llm/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "gateway",
+      "summary": "Module gateway/llm/__init__.py"
+    },
+    "gateway/llm/router.py": {
+      "lines": 461,
+      "functions": [
+        "_extract_mention",
+        "_extract_entities_fast",
+        "route_banking_request",
+        "classify_intent",
+        "extract_slots"
+      ],
+      "classes": [
+        "BankingIntent",
+        "BankingSubIntent",
+        "ExtractedEntities",
+        "BankingRoutingDecision"
+      ],
+      "imports": [
+        "re",
+        "json",
+        "datetime",
+        "enum",
+        "typing",
+        "pydantic",
+        "langchain_core.messages",
+        "gateway.llm.client",
+        "structlog"
+      ],
+      "community": "gateway",
+      "summary": "Production-grade Intent Classification, Sub-Intent Resolution, and Entity Extraction Engine."
+    },
+    "gateway/llm/client.py": {
+      "lines": 291,
+      "functions": [
+        "__init__",
+        "__init__",
+        "invoke_chat",
+        "_deterministic_fallback"
+      ],
+      "classes": [
+        "LLMResponse",
+        "LLMGateway"
+      ],
+      "imports": [
+        "os",
+        "re",
+        "time",
+        "json",
+        "typing",
+        "langchain_core.messages",
+        "apps.api.config",
+        "structlog",
+        "langchain_groq"
+      ],
+      "community": "gateway",
+      "summary": "LLM Gateway Client supporting Groq (ChatGroq) with fallback and metrics tracking."
+    },
+    "tests/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "tests",
+      "summary": "Module tests/__init__.py"
+    },
+    "tests/unit/test_new_user_onboarding.py": {
+      "lines": 86,
+      "functions": [
+        "setup_db",
+        "test_list_customers_and_guest_prospect",
+        "test_new_user_onboarding_multi_turn_flow"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "pytest_asyncio",
+        "httpx",
+        "apps.api.main",
+        "database.init_db",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "uuid"
+      ],
+      "community": "tests",
+      "summary": "Tests for New User Onboarding & Persona Switching."
+    },
+    "tests/unit/test_production_intent_router.py": {
+      "lines": 217,
+      "functions": [
+        "test_negation_detection_prevents_accidental_action",
+        "test_typo_and_slang_resilience",
+        "test_granular_dispute_sub_intents",
+        "test_unauthorized_fraud_support_flow",
+        "test_temporal_date_time_query",
+        "test_agent_at_mention_routing",
+        "test_layered_semantic_caching"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "langchain_core.messages",
+        "gateway.llm.router",
+        "services.cache.cache_engine",
+        "agents.supervisor.graph",
+        "checkpoints.checkpointer"
+      ],
+      "community": "tests",
+      "summary": "Tests for Production-Grade Intent Classification, Sub-Intents, Negation, Typo Resilience, and Semantic Cache."
+    },
+    "tests/unit/test_api_endpoints.py": {
+      "lines": 70,
+      "functions": [
+        "setup_db",
+        "test_health_and_readiness_endpoints",
+        "test_chat_balance_inquiry_api",
+        "test_chat_prompt_injection_guardrail_api",
+        "test_admin_review_queue_api"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "httpx",
+        "apps.api.main",
+        "database.init_db"
+      ],
+      "community": "tests",
+      "summary": "Integration tests for FastAPI REST endpoints."
+    },
+    "tests/unit/test_tool_gateway.py": {
+      "lines": 50,
+      "functions": [
+        "test_agent_rbac_permitted_actions",
+        "test_agent_rbac_denies_unauthorized_action",
+        "test_idempotency_manager_lock_and_replay"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "gateway.tool_gateway.permissions",
+        "gateway.tool_gateway.idempotency",
+        "uuid"
+      ],
+      "community": "tests",
+      "summary": "Unit tests for Tool Gateway RBAC and Idempotency manager."
+    },
+    "tests/unit/test_phase567_tools.py": {
+      "lines": 119,
+      "functions": [
+        "setup_db",
+        "test_emi_mathematical_precision",
+        "test_card_freeze_and_unfreeze",
+        "test_card_spending_limit_update",
+        "test_loan_eligibility_check",
+        "test_bill_fetch_and_upi_verification",
+        "test_knowledge_base_search_and_ticket_creation"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "math",
+        "database.init_db",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "tools.cards",
+        "tools.loans",
+        "tools.payments",
+        "tools.knowledge"
+      ],
+      "community": "tests",
+      "summary": "Unit tests for Cards, Loans, Bill Payments, and Knowledge RAG tools."
+    },
+    "tests/unit/test_insights_and_genui.py": {
+      "lines": 114,
+      "functions": [
+        "setup_db",
+        "test_spending_insights_tool",
+        "test_subscriptions_tool",
+        "test_cashflow_prediction_tool",
+        "test_insights_subgraph_produces_genui_widget",
+        "test_chat_api_loan_inquiry_returns_emi_slider_widget",
+        "test_guardian_alerts_endpoint"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "pytest_asyncio",
+        "httpx",
+        "apps.api.main",
+        "database.init_db",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "tools.insights",
+        "agents.insights.graph",
+        "langchain_core.messages"
+      ],
+      "community": "tests",
+      "summary": "Test suite for Next-Gen Capabilities: PFM Insights, Generative UI Widgets, and Guardian."
+    },
+    "tests/unit/test_chat_history.py": {
+      "lines": 83,
+      "functions": [
+        "setup_db",
+        "test_serve_chat_ui",
+        "test_session_lifecycle_and_history"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "pytest",
+        "httpx",
+        "apps.api.main",
+        "database.init_db"
+      ],
+      "community": "tests",
+      "summary": "Unit and API integration tests for ChatGPT-style session management and history."
+    },
+    "tests/unit/test_account_validation.py": {
+      "lines": 151,
+      "functions": [
+        "setup_db",
+        "test_validate_email_unit",
+        "test_validate_date_of_birth_unit",
+        "test_validate_full_name_unit",
+        "test_kyc_rejection_and_recovery_flow"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "uuid",
+        "httpx",
+        "apps.api.main",
+        "database.init_db",
+        "agents.account.validators"
+      ],
+      "community": "tests",
+      "summary": "Unit and Integration Tests for Production KYC & Profile Validation in Account Opening."
+    },
+    "tests/unit/test_cache_and_memory.py": {
+      "lines": 133,
+      "functions": [
+        "test_redis_query_cache_lifecycle",
+        "test_cross_subgraph_entity_memory_pronoun_resolution",
+        "test_sliding_window_rate_limiter",
+        "test_correlation_id_header_middleware",
+        "test_circuit_breaker_fail_fast_and_recovery",
+        "failing_service"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "pytest_asyncio",
+        "httpx",
+        "apps.api.main",
+        "services.cache.cache_engine",
+        "gateway.rate_limit.limiter",
+        "services.resilience.circuit_breaker",
+        "agents.supervisor.graph",
+        "langchain_core.messages",
+        "uuid"
+      ],
+      "community": "tests",
+      "summary": "Test suite for Redis Query Cache, Entity Memory, Rate Limiting, and Resilience."
+    },
+    "tests/unit/test_policies.py": {
+      "lines": 82,
+      "functions": [
+        "test_fraud_engine_low_risk",
+        "test_fraud_engine_high_risk_signals",
+        "test_policy_inactive_account_denied",
+        "test_policy_high_fraud_triggers_hitl",
+        "test_policy_requires_user_confirmation",
+        "test_policy_allow_when_all_rules_pass"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "services.fraud.engine",
+        "policies.transfer"
+      ],
+      "community": "tests",
+      "summary": "Unit tests for Deterministic Transfer Policy Engine and Fraud Engine."
+    },
+    "tests/security/test_security.py": {
+      "lines": 57,
+      "functions": [
+        "test_prompt_injection_detection",
+        "test_benign_banking_queries_allowed",
+        "test_pii_masking"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "security.guardrails",
+        "security.pii"
+      ],
+      "community": "tests",
+      "summary": "Security tests for Prompt Injection defense and PII masking."
+    },
+    "tests/security/test_guardrails_ai.py": {
+      "lines": 65,
+      "functions": [
+        "test_guardrails_ai_prompt_injection_rejection",
+        "test_guardrails_ai_secrets_detection",
+        "test_guardrails_ai_output_pii_anonymization",
+        "test_guardrails_ai_benign_banking_queries_allowed"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "security.guardrails_engine"
+      ],
+      "community": "tests",
+      "summary": "Test suite for Guardrails AI (guardrails-ai) Enterprise Integration."
+    },
+    "tests/graph/test_fanout_architecture.py": {
+      "lines": 83,
+      "functions": [
+        "setup_db",
+        "test_transfer_subgraph_parallel_fanout_execution",
+        "test_transfer_subgraph_parallel_aml_block_fanout"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "pytest_asyncio",
+        "langgraph.checkpoint.memory",
+        "langchain_core.messages",
+        "database.init_db",
+        "agents.transfer.graph"
+      ],
+      "community": "tests",
+      "summary": "Module tests/graph/test_fanout_architecture.py"
+    },
+    "tests/graph/test_graphs.py": {
+      "lines": 130,
+      "functions": [
+        "setup_test_db",
+        "test_account_opening_multi_turn_flow",
+        "test_money_transfer_flow_and_confirmation",
+        "test_context_switching_balance_during_account_opening",
+        "test_support_declined_transaction_inquiry"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "langchain_core.messages",
+        "langgraph.checkpoint.memory",
+        "agents.supervisor.graph",
+        "database.init_db"
+      ],
+      "community": "tests",
+      "summary": "StateGraph execution tests for Supervisor and Subgraphs with MemorySaver checkpointer."
+    },
+    "tests/graph/test_phase567_graphs.py": {
+      "lines": 111,
+      "functions": [
+        "setup_test_db",
+        "test_card_freeze_conversation",
+        "test_loan_emi_calculation_conversation",
+        "test_bill_payment_multi_turn_confirmation",
+        "test_knowledge_rag_faq_conversation",
+        "test_human_support_ticket_escalation"
+      ],
+      "classes": [],
+      "imports": [
+        "pytest",
+        "langchain_core.messages",
+        "langgraph.checkpoint.memory",
+        "agents.supervisor.graph",
+        "database.init_db"
+      ],
+      "community": "tests",
+      "summary": "StateGraph execution tests for Cards, Loans, Bill Payments, and Support RAG."
+    },
+    "apps/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "apps",
+      "summary": "Module apps/__init__.py"
+    },
+    "apps/api/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "apps",
+      "summary": "Module apps/api/__init__.py"
+    },
+    "apps/api/config.py": {
+      "lines": 45,
+      "functions": [],
+      "classes": [
+        "Settings"
+      ],
+      "imports": [
+        "os",
+        "pydantic_settings"
+      ],
+      "community": "apps",
+      "summary": "Application configuration using Pydantic Settings."
+    },
+    "apps/api/main.py": {
+      "lines": 91,
+      "functions": [
+        "lifespan",
+        "global_exception_handler",
+        "serve_chat_ui"
+      ],
+      "classes": [],
+      "imports": [
+        "contextlib",
+        "fastapi",
+        "fastapi.middleware.cors",
+        "fastapi.responses",
+        "apps.api.config",
+        "apps.api.routes.chat",
+        "apps.api.routes.admin",
+        "apps.api.routes.health",
+        "security.headers",
+        "security.tracing",
+        "gateway.rate_limit.limiter",
+        "database.init_db",
+        "structlog",
+        "os",
+        "fastapi.staticfiles",
+        "fastapi.responses"
+      ],
+      "community": "apps",
+      "summary": "Main FastAPI Application for Enterprise AI Banking Agent."
+    },
+    "apps/api/routes/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "apps",
+      "summary": "Module apps/api/routes/__init__.py"
+    },
+    "apps/api/routes/health.py": {
+      "lines": 47,
+      "functions": [
+        "health_check",
+        "readiness_check"
+      ],
+      "classes": [],
+      "imports": [
+        "fastapi",
+        "sqlalchemy",
+        "database.connection",
+        "redis.asyncio",
+        "apps.api.config"
+      ],
+      "community": "apps",
+      "summary": "Health and readiness check endpoints."
+    },
+    "apps/api/routes/admin.py": {
+      "lines": 88,
+      "functions": [
+        "list_pending_reviews",
+        "act_on_review"
+      ],
+      "classes": [],
+      "imports": [
+        "datetime",
+        "fastapi",
+        "sqlalchemy",
+        "langgraph.types",
+        "apps.api.schemas.chat",
+        "database.connection",
+        "database.models.banking",
+        "apps.api.routes.chat",
+        "structlog"
+      ],
+      "community": "apps",
+      "summary": "Admin & Bank Officer HITL (Human-in-the-Loop) Review API."
+    },
+    "apps/api/routes/chat.py": {
+      "lines": 406,
+      "functions": [
+        "get_banking_app",
+        "handle_chat",
+        "_handle_chat_impl",
+        "list_chat_sessions",
+        "get_session_history",
+        "delete_chat_session",
+        "get_financial_guardian_alerts",
+        "list_available_customers"
+      ],
+      "classes": [],
+      "imports": [
+        "uuid",
+        "typing",
+        "fastapi",
+        "langchain_core.messages",
+        "apps.api.schemas.chat",
+        "agents.supervisor.graph",
+        "checkpoints.checkpointer",
+        "security.guardrails_engine",
+        "services.cache.cache_engine",
+        "database.connection",
+        "database.repositories.banking_repo",
+        "database.models.banking",
+        "sqlalchemy",
+        "structlog",
+        "asyncio",
+        "traceback",
+        "database.models.banking"
+      ],
+      "community": "apps",
+      "summary": "Chat conversation and ChatGPT-style session history API endpoints."
+    },
+    "apps/api/schemas/__init__.py": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "community": "apps",
+      "summary": "Module apps/api/schemas/__init__.py"
+    },
+    "apps/api/schemas/chat.py": {
+      "lines": 63,
+      "functions": [],
+      "classes": [
+        "ChatRequest",
+        "ChatResponse",
+        "HITLReviewActionRequest",
+        "HITLReviewResponse",
+        "ChatMessageResponse",
+        "ChatSessionResponse",
+        "SessionListResponse",
+        "SessionDetailResponse"
+      ],
+      "imports": [
+        "typing",
+        "pydantic"
+      ],
+      "community": "apps",
+      "summary": "Pydantic schemas for Chat and Admin HITL API."
+    }
+  }
+}

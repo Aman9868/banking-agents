@@ -6,6 +6,27 @@ An enterprise-grade, conversational banking platform built with **LangGraph**, *
 
 ---
 
+## 🖥️ NovaBank Interactive AI Chatbot UI
+
+![NovaBank AI Conversational Interface](docs/screenshots/ui_chat_interface.png)
+
+The enterprise banking portal features:
+- **Interactive Generative UI (GenUI)**: Real-time dynamic widgets (account cards, transaction confirmations, spending breakdowns).
+- **Multi-Agent Conversational Routing**: Seamless context switching between account opening, transfers, cards, loans, payments, and support.
+- **Role-Based & Guest Access**: One-click instant onboarding for new guest prospects alongside authenticated customer sessions.
+
+---
+
+## 🗺️ Master Multi-Agent Architecture (LangGraph)
+
+Below is the complete multi-agent execution graph across all 7 autonomous subgraphs:
+
+![LangGraph Master Multi-Agent Architecture](docs/graphs/banking_graph_full.png)
+
+> **For AI Coding Assistants**: See [`AGENTS.md`](AGENTS.md) and [`graphify-out/GRAPH_REPORT.md`](graphify-out/GRAPH_REPORT.md) for the codebase AST knowledge graph and blast-radius rules.
+
+---
+
 ## Architecture Overview
 
 ```
