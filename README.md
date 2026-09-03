@@ -8,12 +8,83 @@ An enterprise-grade, conversational banking platform built with **LangGraph**, *
 
 ## 🖥️ NovaBank Interactive AI Chatbot UI
 
-![NovaBank AI Conversational Interface](docs/screenshots/ui_chat_interface.png)
+| NovaBank Conversational Portal | Customer Persona & Guest Onboarding Switcher |
+| :---: | :---: |
+| ![NovaBank AI Interface](docs/screenshots/ui_chat_interface.png) | ![Customer Persona Switcher](docs/screenshots/persona_switcher.png) |
 
 The enterprise banking portal features:
-- **Interactive Generative UI (GenUI)**: Real-time dynamic widgets (account cards, transaction confirmations, spending breakdowns).
+- **Interactive Generative UI (GenUI)**: Real-time dynamic widgets (Account Cards, EMI Sliders, Transaction Receipts, Spending Breakdowns).
 - **Multi-Agent Conversational Routing**: Seamless context switching between account opening, transfers, cards, loans, payments, and support.
 - **Role-Based & Guest Access**: One-click instant onboarding for new guest prospects alongside authenticated customer sessions.
+
+---
+
+## 💬 Live Chat Samples & Multi-Agent Interactions
+
+### 1. Conversational KYC & Instant Savings Account Opening
+```markdown
+👤 User: I want to open a new savings account with NovaBank
+🤖 Assistant: Absolutely! I can help you open a new bank account. May I have your full name?
+👤 User: rajuu
+🤖 Assistant: Thanks, Raju. What is your date of birth?
+👤 User: 07-10-1997
+🤖 Assistant: What email address would you like to use for your account?
+👤 User: raju@example.com
+🤖 Assistant: Congratulations Raju! Your KYC is complete. Your SAVINGS account SB64237377 has been successfully opened.
+
+┌─────────────────────────────────────────────────────────────┐
+│  NovaBank Digital Account Passbook                          │
+│  ACTIVE & KYC VERIFIED                                      │
+│  Account Number: SB64237377        Account Holder: Raju     │
+│  Customer ID:    CUST-8536         Account Type:   SAVINGS  │
+│  IFSC Code:      NOVA0001001       Branch: Digital Branch   │
+│  Balance:        ₹0.00                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2. Controlled Money Transfer with Parallel Fraud Scoring & Two-Phase Confirmation
+```markdown
+👤 User: Transfer ₹5,000 to Rahul
+🤖 Assistant: Transfer ₹5,000.00 to Rahul Sharma (Account: ****3456).
+   Fraud Score: 0.05 (LOW RISK).
+   Daily Transfer Limit Available: ₹95,000.00.
+   Please reply 'Yes' to confirm the transfer, or 'No' to cancel.
+
+👤 User: Yes
+🤖 Assistant: Transfer initiated! ₹5,000.00 sent successfully to Rahul Sharma.
+   Transaction Reference: TXN-94821032
+   New Available Balance: ₹95,000.00.
+```
+
+### 3. Mid-Flow Interruption & Context Switching
+```markdown
+👤 User: I want to open a savings account
+🤖 Assistant: Absolutely! What is your full legal name?
+👤 User: Amanpreet Singh
+🤖 Assistant: Thanks Amanpreet! What is your date of birth?
+👤 User: Before that, what's my current balance?
+🤖 Assistant: Your current balance for Savings account ****1234 is ₹100,000.00.
+
+   Now, continuing with your account application: What is your date of birth?
+```
+
+### 4. Card Security & Instant Lock Safeguard
+```markdown
+👤 User: I lost my debit card, please freeze it right now!
+🤖 Assistant: Your NovaBank Platinum Debit Card ending in ****7821 has been INSTANTLY FROZEN.
+   All online, POS, and ATM transactions are temporarily blocked.
+   Would you like me to order a replacement card to your registered address?
+```
+
+### 5. Loan Advisory & Mathematical EMI Calculation
+```markdown
+👤 User: What is the EMI for a 5 lakh loan for 3 years?
+🤖 Assistant: For a Personal Loan of ₹5,00,000 over 36 months at 10.50% annual interest:
+   • Monthly EMI: ₹16,254.67
+   • Total Interest: ₹85,168.00
+   • Total Payable: ₹5,85,168.00
+   Would you like to check your eligibility or proceed with an application?
+```
 
 ---
 
