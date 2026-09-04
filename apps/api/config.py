@@ -29,6 +29,13 @@ class Settings(BaseSettings):
 
     # LLM Gateway
     LLM_PROVIDER: str = "groq"
+    # Google Gemini
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_PROJECT_ID: Optional[str] = None
+    GEMINI_PROJECT_NO: Optional[str] = None
+
+    # Groq
     GROQ_API_KEY: str = ""
     GROQ_ROUTING_MODEL: str = "openai/gpt-oss-20b"
     GROQ_REASONING_MODEL: str = "openai/gpt-oss-120b"
@@ -49,6 +56,12 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Propagate Gemini configuration into os.environ
+if settings.GEMINI_API_KEY:
+    os.environ["GEMINI_API_KEY"] = settings.GEMINI_API_KEY
+if settings.GEMINI_MODEL:
+    os.environ["GEMINI_MODEL"] = settings.GEMINI_MODEL
 
 # Propagate LangSmith configuration into os.environ for native LangGraph/LangChain tracing
 if settings.LANGCHAIN_API_KEY:
