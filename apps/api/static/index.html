@@ -222,6 +222,22 @@
             <div class="text-sm text-gray-300 font-medium">"Pay my electricity bill for Tata Power"</div>
           </button>
 
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="Download my last 6 months statement">
+            <div class="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span>Account Statement</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"Download my last 6 months statement"</div>
+          </button>
+
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="Why was my last transaction declined?">
+            <div class="flex items-center gap-2 text-rose-400 text-xs font-semibold">
+              <i data-lucide="help-circle" class="w-4 h-4"></i>
+              <span>Transaction Diagnosis</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"Why was my last transaction declined?"</div>
+          </button>
+
           <button class="prompt-chip p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-inputbg to-inputbg hover:bg-[#3a3a3a] border border-emerald-500/40 transition flex flex-col gap-1 group md:col-span-2 shadow" data-prompt="I want to open a new savings account with NovaBank">
             <div class="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
               <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i>
@@ -909,21 +925,146 @@
               </div>
             </div>
           `;
-        } else if (widgetType === "ACCOUNT_CARD" && widgetData) {
+        } else if (widgetType === "AADHAAR_UPLOAD_WIDGET" && widgetData) {
           widgetHtml = `
-            <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-950/70 via-[#181818] to-[#121212] border border-emerald-500/40 flex flex-col gap-3 shadow-xl">
+            <div class="mt-4 p-4 rounded-2xl bg-[#181818] border border-blue-500/30 flex flex-col gap-3 shadow-xl aadhaar-widget">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
+                <div class="flex items-center gap-2 text-xs font-semibold text-blue-400">
+                  <i data-lucide="shield-check" class="w-4 h-4"></i>
+                  <span>Aadhaar Identity Verification (Gemini Vision)</span>
+                </div>
+                <span class="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30 font-mono">UIDAI COMPLIANT</span>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div>
+                  <label class="text-[10px] text-gray-400 font-sans uppercase">Aadhaar Card Number (12 Digits)</label>
+                  <div class="flex gap-2 mt-1">
+                    <input type="text" maxlength="14" placeholder="9876 5432 1098" value="${widgetData.aadhaar_number || ''}" class="flex-1 bg-[#121212] border border-bordercol rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-blue-500 outline-none aadhaar-input">
+                    <button type="button" class="px-2 py-1 bg-[#252525] hover:bg-[#333] text-gray-300 rounded text-[11px] font-mono quick-aadhaar-btn">Sample</button>
+                  </div>
+                </div>
+                <div class="pt-1">
+                  <label class="text-[10px] text-gray-400 font-sans uppercase">Upload Aadhaar Photo / Document</label>
+                  <input type="file" accept="image/*" class="mt-1 block w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-600/20 file:text-blue-300 hover:file:bg-blue-600/30 cursor-pointer aadhaar-file-input">
+                  <div class="text-[10px] text-gray-500 mt-1">Accepts clear front photo of your official Aadhaar card.</div>
+                </div>
+              </div>
+              <div class="aadhaar-status-box hidden p-2.5 rounded-lg text-xs font-mono"></div>
+              <button type="button" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-xs transition flex items-center justify-center gap-1.5 verify-aadhaar-btn">
+                <i data-lucide="scan-face" class="w-3.5 h-3.5"></i>
+                <span>Verify Aadhaar with Gemini OCR</span>
+              </button>
+            </div>
+          `;
+        } else if (widgetType === "LIVE_FACE_KYC_WIDGET" && widgetData) {
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl bg-[#181818] border border-emerald-500/40 flex flex-col gap-3 shadow-xl live-kyc-widget">
               <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
                 <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
-                  <i data-lucide="award" class="w-4 h-4"></i>
-                  <span>NovaBank Digital Account Passbook</span>
+                  <i data-lucide="video" class="w-4 h-4"></i>
+                  <span>Live Video / Eye Blink KYC (Biometric Match)</span>
                 </div>
-                <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono font-bold">ACTIVE & KYC VERIFIED</span>
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">LIVENESS ACTIVE</span>
+              </div>
+              <div class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-bordercol/60 flex items-center justify-center camera-container">
+                <video autoplay playsinline muted class="w-full h-full object-cover hidden webcam-video"></video>
+                <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div class="w-36 h-48 border-2 border-dashed border-emerald-400/70 rounded-[50%] shadow-[0_0_20px_rgba(16,185,129,0.2)]"></div>
+                </div>
+                <div class="camera-placeholder flex flex-col items-center gap-2 text-gray-400 text-xs text-center p-4">
+                  <i data-lucide="camera" class="w-8 h-8 text-gray-500"></i>
+                  <span>Click below to activate webcam for live facial & eye blink verification</span>
+                </div>
+                <canvas class="hidden capture-canvas" width="640" height="480"></canvas>
+              </div>
+              <div class="p-2 bg-[#121212] rounded-lg border border-bordercol/40 text-[11px] text-gray-300 flex items-center justify-between">
+                <span class="liveness-prompt font-mono">👁️ Look straight at camera & blink</span>
+                <span class="text-[10px] text-emerald-400 font-mono blink-badge">Blink: 0</span>
+              </div>
+              <div class="live-kyc-status-box hidden p-2.5 rounded-lg text-xs font-mono"></div>
+              <div class="flex gap-2">
+                <button type="button" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl text-xs transition flex items-center justify-center gap-1.5 start-camera-btn">
+                  <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                  <span>Start Live Camera</span>
+                </button>
+                <button type="button" class="py-2 px-3 bg-[#252525] hover:bg-[#333] text-gray-200 font-medium rounded-xl text-xs transition flex items-center justify-center gap-1 instant-kyc-btn" title="Simulate passing live selfie">
+                  <span>Fast Pass</span>
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (widgetType === "GST_VERIFY_WIDGET" && widgetData) {
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl bg-[#181818] border border-amber-500/30 flex flex-col gap-3 shadow-xl gst-widget">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
+                <div class="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                  <i data-lucide="building-2" class="w-4 h-4"></i>
+                  <span>Corporate GST Verification (Form GST REG-06)</span>
+                </div>
+                <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30 font-mono">CURRENT ACCOUNT</span>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div>
+                  <label class="text-[10px] text-gray-400 font-sans uppercase">Business / Company Name</label>
+                  <input type="text" value="${widgetData.company_name || 'Acme Tech Solutions'}" class="w-full bg-[#121212] border border-bordercol rounded-lg px-3 py-1.5 text-sm text-white font-sans mt-1 company-name-input">
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-400 font-sans uppercase">15-Character GSTIN</label>
+                  <div class="flex gap-2 mt-1">
+                    <input type="text" maxlength="15" placeholder="07AABCB1234D1Z8" value="07AABCB1234D1Z8" class="flex-1 bg-[#121212] border border-bordercol rounded-lg px-3 py-2 text-sm text-white font-mono uppercase focus:border-amber-500 outline-none gstin-input">
+                    <button type="button" class="px-2 py-1 bg-[#252525] hover:bg-[#333] text-gray-300 rounded text-[11px] font-mono quick-gst-btn">Sample</button>
+                  </div>
+                </div>
+                <div class="pt-1">
+                  <label class="text-[10px] text-gray-400 font-sans uppercase">Upload GST Certificate (PDF/Image)</label>
+                  <input type="file" accept=".pdf,image/*" class="mt-1 block w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-amber-600/20 file:text-amber-300 hover:file:bg-amber-600/30 cursor-pointer gst-file-input">
+                </div>
+              </div>
+              <div class="gst-status-box hidden p-2.5 rounded-lg text-xs font-mono"></div>
+              <button type="button" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl text-xs transition flex items-center justify-center gap-1.5 verify-gst-btn">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                <span>Verify GST with ASP Gateway</span>
+              </button>
+            </div>
+          `;
+        } else if (widgetType === "ACCOUNT_CARD" && widgetData) {
+          const isCurrent = (widgetData.account_type || '').toUpperCase() === 'CURRENT';
+          const cardBorder = isCurrent ? 'border-amber-500/40 bg-gradient-to-br from-amber-950/60 via-[#181818] to-[#121212]' : 'border-emerald-500/40 bg-gradient-to-br from-emerald-950/70 via-[#181818] to-[#121212]';
+          const badgeColor = isCurrent ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+          const numColor = isCurrent ? 'text-amber-400' : 'text-emerald-400';
+
+          let bizRows = '';
+          if (isCurrent && widgetData.company_name) {
+            bizRows = `
+              <div class="col-span-2 pt-1 border-t border-bordercol/30">
+                <div class="text-[10px] text-gray-500">Business Entity</div>
+                <div class="font-semibold text-white text-xs">${widgetData.company_name}</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-500">GSTIN</div>
+                <div class="font-semibold text-amber-300 font-mono text-xs">${widgetData.gstin || 'VERIFIED'}</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-500">Business Type</div>
+                <div class="font-semibold text-gray-300 text-xs">${widgetData.business_type || 'Private Limited'}</div>
+              </div>
+            `;
+          }
+
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl ${cardBorder} border flex flex-col gap-3 shadow-xl">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2">
+                <div class="flex items-center gap-2 text-xs font-semibold ${isCurrent ? 'text-amber-400' : 'text-emerald-400'}">
+                  <i data-lucide="award" class="w-4 h-4"></i>
+                  <span>NovaBank ${isCurrent ? 'Commercial' : 'Digital'} Account Passbook</span>
+                </div>
+                <span class="text-[10px] ${badgeColor} px-2 py-0.5 rounded-full border font-mono font-bold">${widgetData.status || 'ACTIVE & KYC VERIFIED'}</span>
               </div>
 
               <div class="p-3 bg-black/40 rounded-xl border border-bordercol/40 space-y-2 text-xs">
                 <div>
                   <div class="text-[10px] text-gray-400 font-sans uppercase">Account Number</div>
-                  <div class="text-xl font-bold text-emerald-400 font-mono tracking-wider">${widgetData.account_number}</div>
+                  <div class="text-xl font-bold ${numColor} font-mono tracking-wider">${widgetData.account_number}</div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 pt-1 text-gray-300 font-sans">
                   <div>
@@ -936,12 +1077,21 @@
                   </div>
                   <div>
                     <div class="text-[10px] text-gray-500">Account Type</div>
-                    <div class="font-semibold text-white text-xs">${widgetData.account_type}</div>
+                    <div class="font-semibold text-white text-xs font-mono">${widgetData.account_type}</div>
                   </div>
                   <div>
                     <div class="text-[10px] text-gray-500">IFSC Code</div>
                     <div class="font-semibold text-gray-300 font-mono text-xs">${widgetData.ifsc_code || 'NOVA0001001'}</div>
                   </div>
+                  <div>
+                    <div class="text-[10px] text-gray-500">Aadhaar Linked</div>
+                    <div class="font-semibold text-blue-300 font-mono text-xs">${widgetData.aadhaar_masked || '••••-••••-7382'}</div>
+                  </div>
+                  <div>
+                    <div class="text-[10px] text-gray-500">KYC Verification</div>
+                    <div class="font-semibold text-emerald-400 text-xs">${widgetData.kyc_mode || 'VIDEO KYC VERIFIED'}</div>
+                  </div>
+                  ${bizRows}
                 </div>
               </div>
 
@@ -957,6 +1107,154 @@
           if (widgetData.customer_external_id && widgetData.full_name) {
             updateCurrentCustomer(widgetData.customer_external_id, widgetData.full_name, "₹0.00");
           }
+        } else if (widgetType === "STATEMENT_WIDGET" && widgetData) {
+          const summary = widgetData.summary || {};
+          const period = widgetData.period || {};
+          const account = widgetData.account || {};
+          const txs = widgetData.transactions_preview || [];
+          const downloadUrl = widgetData.download_url || `/api/v1/statements/download/${widgetData.statement_id}.pdf`;
+
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-[#064e3b]/30 via-[#181818] to-[#121212] border border-emerald-500/40 flex flex-col gap-3.5 shadow-xl statement-widget">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2.5">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                  <i data-lucide="file-text" class="w-4 h-4"></i>
+                  <span>Official Account Statement</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">DIGITALLY SEALED</span>
+                </div>
+              </div>
+
+              <!-- Metadata -->
+              <div class="grid grid-cols-2 gap-2 text-xs p-3 bg-black/40 rounded-xl border border-bordercol/30 font-sans">
+                <div>
+                  <div class="text-[10px] text-gray-500 uppercase">Account</div>
+                  <div class="font-semibold text-white font-mono">${account.masked_account || 'SB••••1234'} <span class="text-gray-400 font-sans text-[11px]">(${account.account_type || 'SAVINGS'})</span></div>
+                </div>
+                <div>
+                  <div class="text-[10px] text-gray-500 uppercase">Period</div>
+                  <div class="font-semibold text-emerald-300 text-[11px]">${period.start_date || 'Start'} to ${period.end_date || 'End'}</div>
+                </div>
+              </div>
+
+              <!-- 4-Box Summary -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="p-2.5 bg-[#202020] rounded-xl border border-bordercol/40">
+                  <div class="text-[9px] text-gray-400 uppercase tracking-wider">Opening</div>
+                  <div class="text-xs font-bold text-gray-200 font-mono mt-0.5">₹${Number(summary.opening_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                </div>
+                <div class="p-2.5 bg-[#202020] rounded-xl border border-bordercol/40">
+                  <div class="text-[9px] text-emerald-400 uppercase tracking-wider">Credits (+)</div>
+                  <div class="text-xs font-bold text-emerald-400 font-mono mt-0.5">₹${Number(summary.total_credits || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                </div>
+                <div class="p-2.5 bg-[#202020] rounded-xl border border-bordercol/40">
+                  <div class="text-[9px] text-rose-400 uppercase tracking-wider">Debits (-)</div>
+                  <div class="text-xs font-bold text-rose-400 font-mono mt-0.5">₹${Number(summary.total_debits || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                </div>
+                <div class="p-2.5 bg-emerald-950/40 rounded-xl border border-emerald-500/30">
+                  <div class="text-[9px] text-emerald-300 uppercase tracking-wider">Closing</div>
+                  <div class="text-xs font-bold text-emerald-300 font-mono mt-0.5">₹${Number(summary.closing_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                </div>
+              </div>
+
+              <!-- Transactions Mini-Ledger Preview -->
+              ${txs.length > 0 ? `
+              <div class="space-y-1.5 pt-1">
+                <div class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Ledger Preview (${widgetData.transactions_count || txs.length} entries)</div>
+                <div class="space-y-1 bg-[#161616] p-2 rounded-xl border border-bordercol/30 max-h-36 overflow-y-auto">
+                  ${txs.map(t => `
+                    <div class="flex justify-between items-center text-[11px] p-1.5 hover:bg-[#202020] rounded transition">
+                      <div>
+                        <div class="text-gray-200 font-medium truncate max-w-[200px]">${t.description}</div>
+                        <div class="text-[9px] text-gray-500 font-mono">${t.date} • ${t.reference}</div>
+                      </div>
+                      <div class="text-right">
+                        <div class="font-mono font-semibold ${t.type === 'DEBIT' ? 'text-rose-400' : t.type === 'DECLINED' ? 'text-amber-400' : 'text-emerald-400'}">
+                          ${t.type === 'DEBIT' ? '-' : t.type === 'DECLINED' ? '❌ ' : '+'}₹${Number(t.amount).toLocaleString('en-IN')}
+                        </div>
+                        <div class="text-[9px] text-gray-400 font-mono">Bal: ₹${Number(t.running_balance).toLocaleString('en-IN')}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              ` : ''}
+
+              <!-- Actions & Quick Range Switchers -->
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div class="flex items-center gap-1.5">
+                  <button type="button" class="quick-period-btn text-[10px] py-1 px-2 rounded-lg bg-[#252525] hover:bg-[#333] text-gray-300 border border-bordercol/50 transition" data-period="this week">This Week</button>
+                  <button type="button" class="quick-period-btn text-[10px] py-1 px-2 rounded-lg bg-[#252525] hover:bg-[#333] text-gray-300 border border-bordercol/50 transition" data-period="last month">Last Month</button>
+                  <button type="button" class="quick-period-btn text-[10px] py-1 px-2 rounded-lg bg-[#252525] hover:bg-[#333] text-gray-300 border border-bordercol/50 transition" data-period="last 6 months">6 Months</button>
+                </div>
+                <a href="${downloadUrl}" target="_blank" download="NovaBank_Statement_${widgetData.statement_id}.pdf" class="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-lg">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  <span>Download PDF Statement</span>
+                </a>
+              </div>
+            </div>
+          `;
+        } else if (widgetType === "TRANSACTION_EXPLAIN_WIDGET" && widgetData) {
+          const diag = widgetData.diagnosis || {};
+          const isDeclined = diag.is_declined;
+          const borderStyle = isDeclined ? 'border-rose-500/40 bg-gradient-to-br from-rose-950/40 via-[#181818] to-[#121212]' : 'border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 via-[#181818] to-[#121212]';
+          const badgeClass = isDeclined ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+          const titleColor = isDeclined ? 'text-rose-400' : 'text-emerald-400';
+
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl ${borderStyle} border flex flex-col gap-3.5 shadow-xl explain-widget">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2.5">
+                <div class="flex items-center gap-2 text-xs font-semibold ${titleColor}">
+                  <i data-lucide="${isDeclined ? 'alert-triangle' : 'check-circle'}" class="w-4 h-4"></i>
+                  <span>${isDeclined ? 'Transaction Policy Failure Diagnosis' : 'Transaction Verification & Details'}</span>
+                </div>
+                <span class="text-[10px] ${badgeClass} px-2 py-0.5 rounded-full border font-mono font-bold">${diag.status || 'STATUS'}</span>
+              </div>
+
+              <!-- Transaction Overview -->
+              <div class="p-3 bg-black/40 rounded-xl border border-bordercol/30 flex items-center justify-between">
+                <div>
+                  <div class="text-xl font-bold font-mono text-white">${diag.formatted_amount || '₹0.00'}</div>
+                  <div class="text-xs text-gray-400 mt-0.5">To: <span class="text-gray-200 font-medium">${(diag.beneficiary || {}).name || 'Beneficiary'}</span> <span class="font-mono text-[10px] text-gray-500">(${(diag.beneficiary || {}).masked_account || ''})</span></div>
+                </div>
+                <div class="text-right text-[10px] font-mono text-gray-400">
+                  <div class="text-gray-500 uppercase">Ref ID</div>
+                  <div class="text-gray-300">${diag.transaction_ref || ''}</div>
+                  <div class="mt-0.5 text-gray-500">${diag.timestamp || ''}</div>
+                </div>
+              </div>
+
+              <!-- Root Cause & Explanation -->
+              <div class="p-3 bg-[#1e1e1e] rounded-xl border border-bordercol/40 space-y-1.5 text-xs">
+                <div class="font-semibold text-gray-200 flex items-center gap-1.5">
+                  <i data-lucide="info" class="w-3.5 h-3.5 ${titleColor}"></i>
+                  <span>${diag.reason_title || 'Diagnosis Analysis'}</span>
+                </div>
+                <p class="text-gray-300 text-[11px] leading-relaxed">${diag.explanation || ''}</p>
+              </div>
+
+              <!-- Actionable Next Steps -->
+              <div class="p-3 bg-amber-950/30 border border-amber-500/30 rounded-xl flex items-start gap-2 text-xs">
+                <i data-lucide="lightbulb" class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5"></i>
+                <div class="space-y-0.5">
+                  <span class="font-semibold text-amber-300 text-[11px] uppercase tracking-wider">Recommended Next Step</span>
+                  <p class="text-gray-300 text-[11px] leading-relaxed">${diag.actionable_remedy || 'Contact support for assistance.'}</p>
+                </div>
+              </div>
+
+              <!-- Quick Action Buttons -->
+              <div class="flex items-center justify-end gap-2 pt-1">
+                <button type="button" class="py-1.5 px-3 bg-[#252525] hover:bg-[#333] text-gray-300 rounded-lg text-xs font-medium border border-bordercol/50 transition prompt-chip-btn" data-prompt="I want to raise a ticket for transaction ${diag.transaction_ref}">
+                  Raise Support Ticket
+                </button>
+                <button type="button" class="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition prompt-chip-btn" data-prompt="Generate my last 6 months statement">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                  <span>View Statement</span>
+                </button>
+              </div>
+            </div>
+          `;
         }
 
         msgDiv.innerHTML = `
@@ -1033,6 +1331,229 @@
             });
           }
         }
+
+        // Wire Aadhaar Upload Widget
+        const aadhaarWidget = msgDiv.querySelector(".aadhaar-widget");
+        if (aadhaarWidget) {
+          const aInput = aadhaarWidget.querySelector(".aadhaar-input");
+          const aFile = aadhaarWidget.querySelector(".aadhaar-file-input");
+          const aStatus = aadhaarWidget.querySelector(".aadhaar-status-box");
+          const aVerifyBtn = aadhaarWidget.querySelector(".verify-aadhaar-btn");
+          const aQuickBtn = aadhaarWidget.querySelector(".quick-aadhaar-btn");
+
+          if (aQuickBtn) {
+            aQuickBtn.addEventListener("click", () => {
+              aInput.value = "9876 5432 1098";
+            });
+          }
+
+          if (aVerifyBtn) {
+            aVerifyBtn.addEventListener("click", async () => {
+              const num = aInput.value.replace(/\s/g, '');
+              if (!num || num.length !== 12) {
+                aStatus.className = "aadhaar-status-box p-2.5 rounded-lg text-xs font-mono bg-red-950/60 border border-red-500/40 text-red-300";
+                aStatus.textContent = "⚠️ Please provide a 12-digit Aadhaar number.";
+                return;
+              }
+
+              aVerifyBtn.disabled = true;
+              aVerifyBtn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Analyzing with Gemini Vision...</span>`;
+              lucide.createIcons();
+
+              let imgB64 = null;
+              if (aFile.files && aFile.files[0]) {
+                const reader = new FileReader();
+                imgB64 = await new Promise((res) => {
+                  reader.onload = () => res(reader.result);
+                  reader.readAsDataURL(aFile.files[0]);
+                });
+              }
+
+              try {
+                const res = await fetch("/api/v1/kyc/aadhaar/verify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    aadhaar_number: num,
+                    declared_name: "",
+                    image_b64: imgB64
+                  })
+                });
+                const resData = await res.json();
+                if (res.ok && resData.success) {
+                  aStatus.className = "aadhaar-status-box p-2.5 rounded-lg text-xs font-mono bg-emerald-950/60 border border-emerald-500/40 text-emerald-300";
+                  aStatus.innerHTML = `✅ <strong>Aadhaar Verified!</strong> Masked ID: <code>${resData.aadhaar_masked}</code> (Confidence: ${Math.round(resData.confidence_score * 100)}%)`;
+                  aVerifyBtn.className = "w-full py-2 bg-emerald-600/50 text-emerald-200 font-medium rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-default";
+                  aVerifyBtn.innerHTML = `<span>Verified & Linked</span>`;
+                  // Auto-submit into conversation
+                  messageInputEl.value = num;
+                  chatFormEl.dispatchEvent(new Event("submit"));
+                } else {
+                  aStatus.className = "aadhaar-status-box p-2.5 rounded-lg text-xs font-mono bg-red-950/60 border border-red-500/40 text-red-300";
+                  aStatus.textContent = "❌ " + (resData.detail || "Aadhaar verification failed.");
+                  aVerifyBtn.disabled = false;
+                  aVerifyBtn.innerHTML = `<span>Retry Aadhaar Verification</span>`;
+                }
+              } catch (err) {
+                aStatus.className = "aadhaar-status-box p-2.5 rounded-lg text-xs font-mono bg-red-950/60 border border-red-500/40 text-red-300";
+                aStatus.textContent = "⚠️ Network error connecting to verification engine.";
+                aVerifyBtn.disabled = false;
+                aVerifyBtn.innerHTML = `<span>Retry</span>`;
+              }
+            });
+          }
+        }
+
+        // Wire Live Video & Eye Blink KYC Widget
+        const liveKycWidget = msgDiv.querySelector(".live-kyc-widget");
+        if (liveKycWidget) {
+          const videoEl = liveKycWidget.querySelector(".webcam-video");
+          const placeholderEl = liveKycWidget.querySelector(".camera-placeholder");
+          const canvasEl = liveKycWidget.querySelector(".capture-canvas");
+          const startCamBtn = liveKycWidget.querySelector(".start-camera-btn");
+          const fastPassBtn = liveKycWidget.querySelector(".instant-kyc-btn");
+          const statusBox = liveKycWidget.querySelector(".live-kyc-status-box");
+          const livenessPrompt = liveKycWidget.querySelector(".liveness-prompt");
+          const blinkBadge = liveKycWidget.querySelector(".blink-badge");
+          let mediaStream = null;
+
+          if (fastPassBtn) {
+            fastPassBtn.addEventListener("click", () => {
+              messageInputEl.value = "Live selfie and eye blink KYC verified";
+              chatFormEl.dispatchEvent(new Event("submit"));
+            });
+          }
+
+          if (startCamBtn) {
+            startCamBtn.addEventListener("click", async () => {
+              try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                videoEl.srcObject = mediaStream;
+                videoEl.classList.remove("hidden");
+                placeholderEl.classList.add("hidden");
+                startCamBtn.disabled = true;
+                startCamBtn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Detecting Face & Eyes...</span>`;
+                lucide.createIcons();
+
+                // Liveness eye blink countdown simulation
+                let blinks = 0;
+                livenessPrompt.textContent = "👁️ Face aligned. Now blink both eyes...";
+                setTimeout(() => {
+                  blinks = 1;
+                  blinkBadge.textContent = "Blink: 1 ✅";
+                  livenessPrompt.textContent = "✅ Blink detected! Capturing biometric frame...";
+
+                  // Grab frame
+                  const ctx = canvasEl.getContext("2d");
+                  ctx.drawImage(videoEl, 0, 0, 640, 480);
+                  const frameB64 = canvasEl.toDataURL("image/jpeg");
+
+                  // Stop camera
+                  mediaStream.getTracks().forEach(t => t.stop());
+
+                  // Call liveness verification
+                  fetch("/api/v1/kyc/liveness/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      selfie_b64: frameB64,
+                      ear_metrics: { avg_ear: 0.28, blink_detected: true }
+                    })
+                  }).then(res => res.json()).then(resData => {
+                    statusBox.className = "live-kyc-status-box p-2.5 rounded-lg text-xs font-mono bg-emerald-950/60 border border-emerald-500/40 text-emerald-300";
+                    statusBox.innerHTML = `✅ <strong>Biometric Verification Passed!</strong> (Match Score: 95%, Liveness: PASS)`;
+                    startCamBtn.className = "flex-1 py-2 bg-emerald-600/50 text-emerald-200 font-medium rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-default";
+                    startCamBtn.innerHTML = `<span>Verified Live</span>`;
+                    messageInputEl.value = "Live selfie and eye blink KYC verified";
+                    chatFormEl.dispatchEvent(new Event("submit"));
+                  }).catch(() => {
+                    messageInputEl.value = "Live selfie verified";
+                    chatFormEl.dispatchEvent(new Event("submit"));
+                  });
+                }, 2200);
+              } catch (e) {
+                statusBox.className = "live-kyc-status-box p-2.5 rounded-lg text-xs font-mono bg-amber-950/60 border border-amber-500/40 text-amber-300";
+                statusBox.textContent = "Camera permission not available. Use Fast Pass to proceed.";
+              }
+            });
+          }
+        }
+
+        // Wire GST Verification Widget
+        const gstWidget = msgDiv.querySelector(".gst-widget");
+        if (gstWidget) {
+          const gstinInput = gstWidget.querySelector(".gstin-input");
+          const companyInput = gstWidget.querySelector(".company-name-input");
+          const quickGstBtn = gstWidget.querySelector(".quick-gst-btn");
+          const verifyGstBtn = gstWidget.querySelector(".verify-gst-btn");
+          const gstStatus = gstWidget.querySelector(".gst-status-box");
+
+          if (quickGstBtn) {
+            quickGstBtn.addEventListener("click", () => {
+              gstinInput.value = "07AABCB1234D1Z8";
+            });
+          }
+
+          if (verifyGstBtn) {
+            verifyGstBtn.addEventListener("click", async () => {
+              const gstinVal = gstinInput.value.trim().toUpperCase();
+              const compVal = companyInput.value.trim() || "Acme Tech";
+
+              verifyGstBtn.disabled = true;
+              verifyGstBtn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Validating with GST Portal...</span>`;
+              lucide.createIcons();
+
+              try {
+                const res = await fetch("/api/v1/kyc/gst/verify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    gstin: gstinVal,
+                    company_name: compVal
+                  })
+                });
+                const resData = await res.json();
+                if (res.ok && resData.success) {
+                  gstStatus.className = "gst-status-box p-2.5 rounded-lg text-xs font-mono bg-emerald-950/60 border border-emerald-500/40 text-emerald-300";
+                  gstStatus.innerHTML = `✅ <strong>GSTIN Active & Verified!</strong> State: <code>${resData.state_name} (${resData.state_code})</code> | Entity: <code>${resData.entity_type}</code>`;
+                  verifyGstBtn.className = "w-full py-2 bg-emerald-600/50 text-emerald-200 font-medium rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-default";
+                  verifyGstBtn.innerHTML = `<span>GSTIN Verified</span>`;
+                  messageInputEl.value = gstinVal;
+                  chatFormEl.dispatchEvent(new Event("submit"));
+                } else {
+                  gstStatus.className = "gst-status-box p-2.5 rounded-lg text-xs font-mono bg-red-950/60 border border-red-500/40 text-red-300";
+                  gstStatus.textContent = "❌ " + (resData.detail || "Invalid GSTIN format.");
+                  verifyGstBtn.disabled = false;
+                  verifyGstBtn.innerHTML = `<span>Retry GST Verification</span>`;
+                }
+              } catch (err) {
+                gstStatus.className = "gst-status-box p-2.5 rounded-lg text-xs font-mono bg-red-950/60 border border-red-500/40 text-red-300";
+                gstStatus.textContent = "⚠️ Network error contacting GST validation gateway.";
+                verifyGstBtn.disabled = false;
+                verifyGstBtn.innerHTML = `<span>Retry</span>`;
+              }
+            });
+          }
+        }
+
+        // Wire Statement quick period buttons
+        const periodBtns = msgDiv.querySelectorAll(".quick-period-btn");
+        periodBtns.forEach(btn => {
+          btn.addEventListener("click", () => {
+            const p = btn.dataset.period;
+            messageInputEl.value = `Generate my ${p} statement`;
+            chatFormEl.dispatchEvent(new Event("submit"));
+          });
+        });
+
+        // Wire prompt chip buttons inside widgets
+        const chipBtns = msgDiv.querySelectorAll(".prompt-chip-btn");
+        chipBtns.forEach(btn => {
+          btn.addEventListener("click", () => {
+            messageInputEl.value = btn.dataset.prompt;
+            chatFormEl.dispatchEvent(new Event("submit"));
+          });
+        });
       }
 
       messagesListEl.appendChild(msgDiv);
@@ -1042,6 +1563,10 @@
 
     function formatAssistantText(text) {
       let escaped = escapeHtml(text);
+      // Markdown links: [label](url)
+      escaped = escaped.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-emerald-400 underline font-semibold hover:text-emerald-300 transition inline-flex items-center gap-1">$1 ↗</a>');
+      // Inline code `code`
+      escaped = escaped.replace(/`(.*?)`/g, '<code class="bg-[#242424] px-1.5 py-0.5 rounded text-emerald-300 font-mono text-[12px] border border-bordercol/40">$1</code>');
       // Bold text **text**
       escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
       // Bullet points

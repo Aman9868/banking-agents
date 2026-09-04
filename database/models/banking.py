@@ -35,6 +35,22 @@ class Customer(Base):
     risk_tier = Column(String(32), default="LOW", nullable=False)       # LOW, MEDIUM, HIGH
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
+    # Aadhaar & Biometric KYC Fields
+    aadhaar_number_masked = Column(String(32), nullable=True)           # e.g. ••••-••••-1234
+    aadhaar_verified = Column(Boolean, default=False, nullable=False)
+    aadhaar_data = Column(JSON, nullable=True)
+    live_selfie_url = Column(String(255), nullable=True)
+    face_match_score = Column(Float, nullable=True)
+    liveness_verified = Column(Boolean, default=False, nullable=False)
+    kyc_mode = Column(String(32), default="STANDARD", nullable=False)    # STANDARD, DIGITAL_VIDEO_KYC
+
+    # Current Account & Business Verification Fields
+    company_name = Column(String(255), nullable=True)
+    business_type = Column(String(64), nullable=True)                   # Sole Proprietorship, Partnership, Pvt Ltd
+    gstin = Column(String(16), nullable=True)                           # 15-char GSTIN
+    gst_verified = Column(Boolean, default=False, nullable=False)
+    gst_details = Column(JSON, nullable=True)
+
     accounts = relationship("Account", back_populates="customer", cascade="all, delete-orphan")
     beneficiaries = relationship("Beneficiary", back_populates="customer", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="customer")

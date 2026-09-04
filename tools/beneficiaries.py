@@ -47,3 +47,31 @@ async def list_beneficiaries(repo: BankingRepository, customer_id: int) -> ToolR
         }
     )
 
+
+async def add_beneficiary(
+    repo: BankingRepository,
+    customer_id: int,
+    name: str,
+    account_number: str,
+    ifsc_code: str = "NOVA0001001"
+) -> ToolResult:
+    """Adds a new registered beneficiary for the given customer."""
+    bene = await repo.create_beneficiary(
+        customer_id=customer_id,
+        name=name,
+        account_number=account_number,
+        ifsc_code=ifsc_code
+    )
+    return ToolResult(
+        success=True,
+        data={
+            "beneficiary_id": bene.id,
+            "name": bene.name,
+            "account_number": bene.account_number,
+            "masked_account": mask_account_number(bene.account_number),
+            "ifsc_code": bene.ifsc_code,
+            "status": bene.status
+        }
+    )
+
+

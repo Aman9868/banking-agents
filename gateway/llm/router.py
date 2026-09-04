@@ -17,10 +17,14 @@ class BankingIntent(str, Enum):
     TRANSFER_MONEY = "TRANSFER_MONEY"
     OPEN_ACCOUNT = "OPEN_ACCOUNT"
     BALANCE_CHECK = "BALANCE_CHECK"
+    TRANSACTION_INQUIRY = "TRANSACTION_INQUIRY"
+    STATEMENT_REQUEST = "STATEMENT_REQUEST"
     CARD_ACTION = "CARD_ACTION"
     LOAN_ACTION = "LOAN_ACTION"
     PAYMENT_ACTION = "PAYMENT_ACTION"
     SPENDING_INSIGHTS = "SPENDING_INSIGHTS"
+    WEALTH_ADVISORY = "WEALTH_ADVISORY"
+    POLICY_INQUIRY = "POLICY_INQUIRY"
     KNOWLEDGE_FAQ = "KNOWLEDGE_FAQ"
     SUPPORT_DISPUTE = "SUPPORT_DISPUTE"
     TEMPORAL_QUERY = "TEMPORAL_QUERY"
@@ -30,6 +34,20 @@ class BankingIntent(str, Enum):
 
 
 class BankingSubIntent(str, Enum):
+    # Statements & Ledgers
+    DOWNLOAD_STATEMENT = "DOWNLOAD_STATEMENT"
+
+    # Wealth & Investment Advisory
+    SIP_PLANNING = "SIP_PLANNING"
+    STOCK_MARKET_SEARCH = "STOCK_MARKET_SEARCH"
+    PORTFOLIO_RECOMMENDATION = "PORTFOLIO_RECOMMENDATION"
+
+    # Insurance & Banking Policies
+    HEALTH_INSURANCE = "HEALTH_INSURANCE"
+    LIFE_INSURANCE = "LIFE_INSURANCE"
+    GOVERNMENT_SCHEME = "GOVERNMENT_SCHEME"
+    BANKING_POLICY = "BANKING_POLICY"
+
     # Support & Disputes
     CARD_PAYMENT_DECLINED = "CARD_PAYMENT_DECLINED"
     UPI_PAYMENT_FAILED = "UPI_PAYMENT_FAILED"
@@ -58,9 +76,18 @@ class BankingSubIntent(str, Enum):
     CREDIT_CARD_BILL = "CREDIT_CARD_BILL"
     UPI_PAYMENT = "UPI_PAYMENT"
 
-    # Account Opening
+    # Transaction Tracking & History
+    LATEST_TRANSFER = "LATEST_TRANSFER"
+    TRANSFER_HISTORY = "TRANSFER_HISTORY"
+    TRACK_TRANSACTION = "TRACK_TRANSACTION"
+    EXPLAIN_DECLINE = "EXPLAIN_DECLINE"
+    EXPLAIN_LAST_TXN = "EXPLAIN_LAST_TXN"
+
+    # Account & Profile
     SAVINGS_ACCOUNT_OPENING = "SAVINGS_ACCOUNT_OPENING"
     CURRENT_ACCOUNT_OPENING = "CURRENT_ACCOUNT_OPENING"
+    KYC_STATUS = "KYC_STATUS"
+
 
     # PFM Analytics
     SPENDING_BREAKDOWN = "SPENDING_BREAKDOWN"
@@ -70,6 +97,7 @@ class BankingSubIntent(str, Enum):
     # Time & General
     CURRENT_TIME_DATE = "CURRENT_TIME_DATE"
     GREETING = "GREETING"
+    THANK_YOU = "THANK_YOU"
     OTHER = "OTHER"
 
 
@@ -77,6 +105,8 @@ class ExtractedEntities(BaseModel):
     amount: Optional[float] = None
     currency: Optional[str] = "INR"
     beneficiary_name: Optional[str] = None
+    beneficiary_account: Optional[str] = None
+    ifsc_code: Optional[str] = None
     account_type: Optional[str] = None  # SAVINGS, CURRENT
     card_type: Optional[str] = None  # DEBIT, CREDIT
     biller_name: Optional[str] = None
@@ -85,6 +115,11 @@ class ExtractedEntities(BaseModel):
     transaction_ref: Optional[str] = None
     full_name: Optional[str] = None
     email: Optional[str] = None
+    period_type: Optional[str] = None  # LAST_6_MONTHS, THIS_WEEK, LAST_MONTH, etc.
+    user_persona: Optional[str] = None  # STUDENT, EARLY_CAREER, PROFESSIONAL
+    risk_profile: Optional[str] = None  # CONSERVATIVE, MODERATE, AGGRESSIVE
+    stock_symbol: Optional[str] = None
+    policy_category: Optional[str] = None  # HEALTH, LIFE, GOVT_SCHEME, BANKING_DEPOSIT
 
 
 class BankingRoutingDecision(BaseModel):
@@ -112,6 +147,13 @@ MENTION_ROUTING_MAP = {
     "@insights": (BankingIntent.SPENDING_INSIGHTS, BankingSubIntent.SPENDING_BREAKDOWN),
     "@pfm": (BankingIntent.SPENDING_INSIGHTS, BankingSubIntent.SPENDING_BREAKDOWN),
     "@account": (BankingIntent.OPEN_ACCOUNT, BankingSubIntent.SAVINGS_ACCOUNT_OPENING),
+    "@wealth": (BankingIntent.WEALTH_ADVISORY, BankingSubIntent.SIP_PLANNING),
+    "@sip": (BankingIntent.WEALTH_ADVISORY, BankingSubIntent.SIP_PLANNING),
+    "@invest": (BankingIntent.WEALTH_ADVISORY, BankingSubIntent.PORTFOLIO_RECOMMENDATION),
+    "@stock": (BankingIntent.WEALTH_ADVISORY, BankingSubIntent.STOCK_MARKET_SEARCH),
+    "@stocks": (BankingIntent.WEALTH_ADVISORY, BankingSubIntent.STOCK_MARKET_SEARCH),
+    "@policy": (BankingIntent.POLICY_INQUIRY, BankingSubIntent.BANKING_POLICY),
+    "@insurance": (BankingIntent.POLICY_INQUIRY, BankingSubIntent.HEALTH_INSURANCE),
 }
 
 
@@ -129,27 +171,56 @@ def _extract_entities_fast(message: str) -> ExtractedEntities:
     """Deterministic regex entity extractor to supplement and validate LLM outputs."""
     entities = ExtractedEntities()
 
-    # Amount extraction (handles lakh, lac, cr, k, and commas)
-    lakh_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:lakh|lac)s?", message, re.IGNORECASE)
+    # 1. Beneficiary account number extraction FIRST
+    acc_match = re.search(r"(?:acc(?:ount)?\s*(?:no|num|number)?\s*[-:=]?\s*)([A-Za-z0-9]+)\b", message, re.IGNORECASE)
+    if acc_match:
+        entities.beneficiary_account = acc_match.group(1).strip()
+    else:
+        # Check for standalone 9-18 digit account numbers
+        raw_digits = re.findall(r"\b(\d{9,18})\b", message)
+        if raw_digits:
+            entities.beneficiary_account = raw_digits[0]
+
+    # 2. IFSC extraction
+    ifsc_match = re.search(r"(?:ifsc(?:\s*code)?\s*[-:=]?\s*)([A-Za-z0-9]+)\b", message, re.IGNORECASE)
+    if ifsc_match:
+        entities.ifsc_code = ifsc_match.group(1).upper().strip()
+    else:
+        # Standard IFSC format regex: 4 letters + 0/digit + 6 alphanumeric
+        raw_ifsc = re.search(r"\b([A-Za-z]{4}[0-9][0-9A-Za-z]{6})\b", message)
+        if raw_ifsc:
+            entities.ifsc_code = raw_ifsc.group(1).upper().strip()
+
+    # 3. Amount extraction (excluding account number and IFSC code if present)
+    amt_text = message
+    if entities.beneficiary_account:
+        amt_text = amt_text.replace(entities.beneficiary_account, " ")
+    if entities.ifsc_code:
+        amt_text = amt_text.replace(entities.ifsc_code, " ")
+
+    lakh_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:lakh|lac)s?", amt_text, re.IGNORECASE)
     if lakh_match:
         entities.amount = float(lakh_match.group(1)) * 100000.0
     else:
-        k_match = re.search(r"(\d+(?:\.\d+)?)\s*k\b", message, re.IGNORECASE)
+        k_match = re.search(r"(\d+(?:\.\d+)?)\s*k\b", amt_text, re.IGNORECASE)
         if k_match:
             entities.amount = float(k_match.group(1)) * 1000.0
         else:
-            amt_match = re.search(r"(?:₹|rs\.?|inr)?\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)", message, re.IGNORECASE)
+            # Currency symbol match or raw number up to 6 digits
+            amt_match = re.search(r"(?:₹|rs\.?|inr)\s*(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)", amt_text, re.IGNORECASE)
+            if not amt_match:
+                amt_match = re.search(r"\b(\d{1,6}(?:\.\d+)?)\b", amt_text)
             if amt_match:
                 val_str = amt_match.group(1).replace(",", "")
                 try:
                     val = float(val_str)
-                    if val > 0 and val != 2026:  # ignore year
+                    if val > 0 and val not in [2024, 2025, 2026, 2027]:  # ignore years
                         entities.amount = val
                 except ValueError:
                     pass
 
-    # Beneficiary extraction (e.g. "to Rahul", "send Rahul", "pay Rahul")
-    to_match = re.search(r"\b(?:to|pay)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", message)
+    # 4. Beneficiary extraction (e.g. "to Rahul", "send Rahul", "pay Rahul", "beneficiary Rahul")
+    to_match = re.search(r"\b(?:to|pay|beneficiary|for)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", message)
     if to_match:
         entities.beneficiary_name = to_match.group(1).strip()
 
@@ -183,6 +254,47 @@ def _extract_entities_fast(message: str) -> ExtractedEntities:
     txn_match = re.search(r"\b(TXN-[A-Za-z0-9]+)\b", message, re.IGNORECASE)
     if txn_match:
         entities.transaction_ref = txn_match.group(1).upper()
+
+    # Statement period extraction
+    msg_low = message.lower()
+    if any(k in msg_low for k in ["this week", "past week", "7 day", "current week"]):
+        entities.period_type = "THIS_WEEK"
+    elif any(k in msg_low for k in ["last month", "1 month", "past month", "30 day", "previous month"]):
+        entities.period_type = "LAST_MONTH"
+    elif any(k in msg_low for k in ["3 month", "quarter", "90 day", "three month"]):
+        entities.period_type = "LAST_3_MONTHS"
+    elif any(k in msg_low for k in ["6 month", "half year", "180 day", "six month", "half-year"]):
+        entities.period_type = "LAST_6_MONTHS"
+
+    # User persona detection
+    if any(k in msg_low for k in ["college", "student", "coioolsge", "sstudnet", "university", "freshman", "pocket money"]):
+        entities.user_persona = "STUDENT"
+    elif any(k in msg_low for k in ["retired", "senior citizen", "pensioner"]):
+        entities.user_persona = "RETIRED"
+
+    # Risk profile detection
+    if any(k in msg_low for k in ["aggressive", "high risk", "max return", "small cap"]):
+        entities.risk_profile = "AGGRESSIVE"
+    elif any(k in msg_low for k in ["conservative", "safe", "low risk", "guaranteed"]):
+        entities.risk_profile = "CONSERVATIVE"
+    elif any(k in msg_low for k in ["moderate", "balanced"]):
+        entities.risk_profile = "MODERATE"
+
+    # Stock ticker / symbol detection
+    for sym in ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "TATAMOTORS", "ITC", "NIFTY50"]:
+        if re.search(r"\b" + sym + r"\b", message, re.IGNORECASE):
+            entities.stock_symbol = sym
+            break
+
+    # Policy category detection
+    if any(k in msg_low for k in ["health", "mediclaim", "hospital", "doctor", "hralth"]):
+        entities.policy_category = "HEALTH"
+    elif any(k in msg_low for k in ["term life", "pure term", "life insurance", "term plan"]):
+        entities.policy_category = "LIFE"
+    elif any(k in msg_low for k in ["pmjjby", "pmsby", "ppf", "nps", "apy", "sukanya", "govt scheme", "government"]):
+        entities.policy_category = "GOVT_SCHEME"
+    elif any(k in msg_low for k in ["fd", "rd", "fixed deposit", "recurring deposit", "deposit rate"]):
+        entities.policy_category = "BANKING_DEPOSIT"
 
     return entities
 
@@ -239,6 +351,27 @@ async def route_banking_request(
             cleaned_message=raw_text
         )
 
+    # 2b. Deterministic Gratitude & Appreciation fast paths ("thank you", "thanks", "thanku", "thx")
+    gratitude_tokens = [
+        "thank you", "thanks", "thanku", "thx", "ty", "thank u", "many thanks",
+        "great thanks", "thanks a lot", "thank you so much", "thank u so much",
+        "thanks bot", "thnx", "appreciate it", "thankyou", "thanks a million",
+        "thanks!", "thank you!", "thanku!", "thx!"
+    ]
+    if (
+        clean_text in gratitude_tokens
+        or clean_text.rstrip("!.,") in gratitude_tokens
+        or any(clean_text.startswith(p) for p in ["thank you", "thanks", "thanku", "appreciate it", "thank u"])
+    ):
+        return BankingRoutingDecision(
+            intent=BankingIntent.GENERAL_CONVERSATION,
+            sub_intent=BankingSubIntent.THANK_YOU,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning="Customer expressed gratitude or appreciation for banking assistance.",
+            cleaned_message=raw_text
+        )
+
     # 3. Dynamic Temporal Injection (Current Date, Time & Day)
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
@@ -255,8 +388,187 @@ async def route_banking_request(
             cleaned_message=raw_text
         )
 
+    # Fast balance query check (Interruption-safe before contextual steps)
+    bal_triggers = [
+        "what is my balance", "what's my balance", "check balance", "current balance",
+        "account balance", "how much money do i have", "how much is in my account",
+        "show balance", "balance check", "view balance", "my balance", "check my balance"
+    ]
+    if any(q in clean_text for q in bal_triggers) or clean_text in ["balance", "bal", "my bal"]:
+        return BankingRoutingDecision(
+            intent=BankingIntent.BALANCE_CHECK,
+            sub_intent=BankingSubIntent.OTHER,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning="Direct user inquiry for account balance.",
+            cleaned_message=raw_text
+        )
+
+
+    # Fast KYC status inquiry check
+    kyc_triggers = [
+        "is my kyc done", "is kyc done", "my kyc status", "kyc status", "check kyc",
+        "check my kyc", "is my account verified", "am i kyc verified", "kyc verification status"
+    ]
+    if any(q in clean_text for q in kyc_triggers):
+        return BankingRoutingDecision(
+            intent=BankingIntent.OPEN_ACCOUNT,
+            sub_intent=BankingSubIntent.KYC_STATUS,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning="User inquiry for account KYC and verification status.",
+            cleaned_message=raw_text
+        )
+
+    # Fast Account Statement inquiry check
+    stmt_triggers = [
+        "statement", "sattemnet", "statemnt", "statment", "account statement", "pdf statement",
+        "download statement", "send statement", "get statement", "email statement", "bank statement"
+    ]
+    if any(q in clean_text for q in stmt_triggers):
+        entities = _extract_entities_fast(raw_text)
+        return BankingRoutingDecision(
+            intent=BankingIntent.STATEMENT_REQUEST,
+            sub_intent=BankingSubIntent.DOWNLOAD_STATEMENT,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning=f"User requested bank account statement (Period: {entities.period_type or 'LAST_6_MONTHS'}).",
+            entities=entities,
+            cleaned_message=raw_text
+        )
+
+    # Fast Transaction Inquiry, Diagnosis & Transfer Tracking check
+    decline_triggers = [
+        "why was my last transaction declined", "why is my last transaction declined",
+        "why was my transaction declined", "why was it declined", "why did transaction fail",
+        "why my transfer failed", "why was it rejected", "why did it get declined",
+        "reason for decline", "reason for failure", "explain decline"
+    ]
+    explain_triggers = [
+        "explain my last transaction", "explain my transaction", "explain transaction",
+        "explain my spending", "why did my balance decrease", "why balance decreased"
+    ]
+    is_dispute_keyword = any(k in clean_text for k in ["card", "upi", "merchant", "pos", "atm", "swipe", "unauthorized", "fraud", "stolen", "store"])
+    if not is_dispute_keyword and (any(q in clean_text for q in decline_triggers) or (("why" in clean_text or "reason" in clean_text) and any(w in clean_text for w in ["decline", "declined", "failed", "reject", "rejected"]))):
+        entities = _extract_entities_fast(raw_text)
+        return BankingRoutingDecision(
+            intent=BankingIntent.TRANSACTION_INQUIRY,
+            sub_intent=BankingSubIntent.EXPLAIN_DECLINE,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning="User inquiry diagnosing transaction decline root cause and next steps.",
+            entities=entities,
+            cleaned_message=raw_text
+        )
+    if any(q in clean_text for q in explain_triggers):
+        entities = _extract_entities_fast(raw_text)
+        return BankingRoutingDecision(
+            intent=BankingIntent.TRANSACTION_INQUIRY,
+            sub_intent=BankingSubIntent.EXPLAIN_LAST_TXN,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning="User inquiry requesting explanation of latest transaction or spending impact.",
+            entities=entities,
+            cleaned_message=raw_text
+        )
+
+    txn_triggers = [
+        "latest amount i transferred", "latest amount transferred", "last transfer",
+        "latest transfer", "what was my last transfer", "what was the latest amount",
+        "last amount transferred", "last transaction", "latest transaction",
+        "recent transfers", "transfer history", "transaction history", "track transfer",
+        "transfer status", "check my transfers", "where is my transfer", "did my transfer go through"
+    ]
+    is_txn_inquiry = any(q in clean_text for q in txn_triggers) or (
+        ("transfer" in clean_text or "amount" in clean_text or "trasnfer" in clean_text) and any(w in clean_text for w in ["latest", "last", "recent", "status", "track", "history", "laets"])
+    )
+    if is_txn_inquiry or (re.search(r"\b(TXN-[A-Za-z0-9]+)\b", raw_text, re.IGNORECASE) and not any(w in clean_text for w in ["unauthorized", "stolen", "fraud", "dispute"])):
+        sub = BankingSubIntent.LATEST_TRANSFER if any(w in clean_text for w in ["latest", "last", "laets"]) else (
+            BankingSubIntent.TRACK_TRANSACTION if "TXN-" in raw_text.upper() else BankingSubIntent.TRANSFER_HISTORY
+        )
+        entities = _extract_entities_fast(raw_text)
+        return BankingRoutingDecision(
+            intent=BankingIntent.TRANSACTION_INQUIRY,
+            sub_intent=sub,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning="User inquiry for transfer tracking, latest transfer, or transaction history.",
+            entities=entities,
+            cleaned_message=raw_text
+        )
+
+    # Fast Wealth Advisory, SIP Planning & Stock Market check
+    wealth_triggers = [
+        "sip", "sidp", "mutual fund", "mutual funds", "best sip", "sip plan", "start sip",
+        "invest", "investment", "wealth plan", "grow money", "compounding", "portfolio"
+    ]
+    stock_triggers = [
+        "best stock", "best stocks", "stocks to buy", "share market", "stock market",
+        "stock price", "share price", "live price", "quote for", "market price", "buy stock"
+    ]
+    is_student_persona = any(s in clean_text for s in ["college student", "coioolsge", "sstudnet", "college", "student"])
+    is_wealth_query = (
+        any(q in clean_text for q in wealth_triggers)
+        or (is_student_persona and any(w in clean_text for w in ["monthly", "income", "money", "save", "invest", "amount", "amoiut"]))
+        or any(q in clean_text for q in stock_triggers)
+    )
+    if is_wealth_query:
+        entities = _extract_entities_fast(raw_text)
+        if any(q in clean_text for q in stock_triggers) or (entities.stock_symbol and not any(w in clean_text for w in ["sip", "mutual fund"])):
+            sub = BankingSubIntent.STOCK_MARKET_SEARCH
+            reasoning = "User requested stock market research or live quote analysis."
+        elif any(w in clean_text for w in ["recommend", "portfolio", "allocation"]):
+            sub = BankingSubIntent.PORTFOLIO_RECOMMENDATION
+            reasoning = "User requested portfolio allocation strategy."
+        else:
+            sub = BankingSubIntent.SIP_PLANNING
+            reasoning = "User requested SIP investment planning and compounding advisory."
+
+        return BankingRoutingDecision(
+            intent=BankingIntent.WEALTH_ADVISORY,
+            sub_intent=sub,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning=reasoning,
+            entities=entities,
+            cleaned_message=raw_text
+        )
+
+    # Fast Policy & Insurance Inquiry check
+    policy_triggers = [
+        "health insurance", "life insurance", "mediclaim", "pmjjby", "pmsby", "ppf", "nps", "apy",
+        "sukanya", "general policy", "banking policy", "insurance policy", "best policy", "tell policy",
+        "show policies", "policy", "policies", "poilcuy", "poclice", "hralth", "insurance"
+    ]
+    is_policy_query = (
+        any(q in clean_text for q in policy_triggers)
+        and not any(w in clean_text for w in ["transfer policy", "card policy", "password policy", "security policy", "policy_check"])
+    )
+    if is_policy_query:
+        entities = _extract_entities_fast(raw_text)
+        cat = entities.policy_category or "ALL"
+        if cat == "HEALTH":
+            sub = BankingSubIntent.HEALTH_INSURANCE
+        elif cat == "LIFE":
+            sub = BankingSubIntent.LIFE_INSURANCE
+        elif cat == "GOVT_SCHEME":
+            sub = BankingSubIntent.GOVERNMENT_SCHEME
+        else:
+            sub = BankingSubIntent.BANKING_POLICY
+
+        return BankingRoutingDecision(
+            intent=BankingIntent.POLICY_INQUIRY,
+            sub_intent=sub,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning=f"User inquiry for {cat} insurance or banking policy catalog.",
+            entities=entities,
+            cleaned_message=raw_text
+        )
+
     # 4. Contextual Step Fulfillment (e.g. User answering a prompt during onboarding or transfer)
     active_wf = context.get("active_workflow", "NONE")
+
     acc_step = (context.get("account_data") or {}).get("step")
     is_opening_trigger = any(k in clean_text for k in ["open", "savings", "current", "apply", "register", "novabank"])
 
@@ -276,6 +588,36 @@ async def route_banking_request(
             negation_detected=False,
             reasoning="Context continuation for active OPEN_ACCOUNT slot collection.",
             entities=entities,
+            cleaned_message=raw_text
+        )
+
+    # 4b. Contextual Beneficiary Details Continuation
+    transfer_data = context.get("transfer_data") or {}
+    transfer_step = transfer_data.get("step")
+    if active_wf == "TRANSFER_MONEY" and transfer_step in ["ADD_BENEFICIARY", "RESOLVE"]:
+        is_interruption_or_question = any(clean_text.startswith(w) for w in ["what ", "how ", "can ", "why ", "where ", "tell me "])
+        if not is_interruption_or_question:
+            entities = _extract_entities_fast(raw_text)
+            return BankingRoutingDecision(
+                intent=BankingIntent.TRANSFER_MONEY,
+                sub_intent=BankingSubIntent.DOMESTIC_P2P_TRANSFER,
+                confidence=0.98,
+                negation_detected=False,
+                reasoning="Context continuation for active transfer details collection.",
+                entities=entities,
+                cleaned_message=raw_text
+            )
+
+    # 4c. Direct Beneficiary Account & IFSC submission
+    fast_entities = _extract_entities_fast(raw_text)
+    if fast_entities.beneficiary_account and fast_entities.ifsc_code:
+        return BankingRoutingDecision(
+            intent=BankingIntent.TRANSFER_MONEY,
+            sub_intent=BankingSubIntent.DOMESTIC_P2P_TRANSFER,
+            confidence=0.98,
+            negation_detected=False,
+            reasoning="Direct beneficiary account and IFSC code submission.",
+            entities=fast_entities,
             cleaned_message=raw_text
         )
 
@@ -305,9 +647,13 @@ CRITICAL RULES:
 4. CONFIDENCE THRESHOLDING:
    If the query is ambiguous between multiple banking actions, set requires_clarification: true and provide clarification_prompt.
 
+5. TRANSFER TRACKING & TRANSACTION INQUIRY:
+   Queries asking about past transfers, latest transferred amount, transaction history, or tracking a transfer (e.g. 'what was my last transfer', 'latest amount transferred', 'status of transfer') -> TRANSACTION_INQUIRY.
+
 Allowed Intents:
-TRANSFER_MONEY, OPEN_ACCOUNT, BALANCE_CHECK, CARD_ACTION, LOAN_ACTION, PAYMENT_ACTION,
-SPENDING_INSIGHTS, KNOWLEDGE_FAQ, SUPPORT_DISPUTE, TEMPORAL_QUERY, CONFIRM_YES, CONFIRM_NO, GENERAL_CONVERSATION.
+TRANSFER_MONEY, OPEN_ACCOUNT, BALANCE_CHECK, TRANSACTION_INQUIRY, STATEMENT_REQUEST, CARD_ACTION, LOAN_ACTION, PAYMENT_ACTION,
+SPENDING_INSIGHTS, WEALTH_ADVISORY, POLICY_INQUIRY, KNOWLEDGE_FAQ, SUPPORT_DISPUTE, TEMPORAL_QUERY, CONFIRM_YES, CONFIRM_NO, GENERAL_CONVERSATION.
+
 
 Respond ONLY with a JSON object matching this schema:
 {{

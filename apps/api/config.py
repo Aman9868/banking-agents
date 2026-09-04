@@ -1,12 +1,13 @@
 """Application configuration using Pydantic Settings."""
 
 import os
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", ".env.local"),
         env_file_encoding="utf-8",
         extra="ignore"
     )
@@ -15,22 +16,22 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
-    SECRET_KEY: str = "dev-secret-key-change-in-production-vault"
+    SECRET_KEY: str = ""
 
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://user:gI7_36rpP_aQEj5FyJp9@127.0.0.1:5432/banking_agent_db"
-    POSTGRES_SYNC_URL: str = "postgresql://user:gI7_36rpP_aQEj5FyJp9@127.0.0.1:5432/banking_agent_db"
+    # Database: Loaded strictly from .env / environment variables (no hardcoded credentials)
+    DATABASE_URL: str = ""
+    POSTGRES_SYNC_URL: str = ""
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
 
-    # Redis
+    # Redis: Loaded from .env / environment variables
     REDIS_URL: str = "redis://127.0.0.1:6379/0"
 
     # LLM Gateway
     LLM_PROVIDER: str = "groq"
     GROQ_API_KEY: str = ""
-    GROQ_ROUTING_MODEL: str = "llama-3.1-8b-instant"
-    GROQ_REASONING_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_ROUTING_MODEL: str = "openai/gpt-oss-20b"
+    GROQ_REASONING_MODEL: str = "openai/gpt-oss-120b"
 
     # Rate Limiting
     RATE_LIMIT_IP_PER_MINUTE: int = 100
@@ -40,6 +41,19 @@ class Settings(BaseSettings):
     FRAUD_RISK_HITL_THRESHOLD: float = 0.80
     TRANSFER_STEP_UP_LIMIT: float = 50000.00
 
+    # LangSmith Tracing & Evaluation
+    LANGCHAIN_TRACING_V2: str = "true"
+    LANGCHAIN_ENDPOINT: str = "https://api.smith.langchain.com"
+    LANGCHAIN_API_KEY: Optional[str] = None
+    LANGCHAIN_PROJECT: str = "novabank-agent-prod"
+
 
 settings = Settings()
+
+# Propagate LangSmith configuration into os.environ for native LangGraph/LangChain tracing
+if settings.LANGCHAIN_API_KEY:
+    os.environ["LANGCHAIN_TRACING_V2"] = settings.LANGCHAIN_TRACING_V2
+    os.environ["LANGCHAIN_ENDPOINT"] = settings.LANGCHAIN_ENDPOINT
+    os.environ["LANGCHAIN_API_KEY"] = settings.LANGCHAIN_API_KEY
+    os.environ["LANGCHAIN_PROJECT"] = settings.LANGCHAIN_PROJECT
 

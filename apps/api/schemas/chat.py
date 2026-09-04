@@ -8,6 +8,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000, description="Customer message")
     thread_id: Optional[str] = Field(None, description="Conversation session / thread ID for stateful checkpointing")
     customer_external_id: Optional[str] = Field("CUST-1001", description="External customer reference ID")
+    kyc_payload: Optional[Dict[str, Any]] = Field(None, description="Direct KYC upload payload (Aadhaar, GST, or Selfie)")
 
 
 class ChatResponse(BaseModel):

@@ -6,7 +6,7 @@ from gateway.tool_gateway.permissions import authorize_tool_execution
 from gateway.tool_gateway.idempotency import idempotency_manager
 from tools.base import ToolResult
 from tools.accounts import get_balance, get_accounts
-from tools.beneficiaries import get_beneficiary, list_beneficiaries
+from tools.beneficiaries import get_beneficiary, list_beneficiaries, add_beneficiary
 from tools.transfers import initiate_transfer
 from tools.transactions import get_transaction, get_recent_transactions
 from tools.cards import get_cards, freeze_card, unfreeze_card, replace_card, set_card_limits
@@ -14,6 +14,11 @@ from tools.loans import calculate_emi_tool, check_loan_eligibility_tool, apply_l
 from tools.payments import get_billers_tool, fetch_bill_tool, pay_bill_tool, verify_upi_id_tool
 from tools.knowledge import search_knowledge_base_tool, create_support_ticket_tool
 from tools.insights import get_spending_insights_tool, detect_subscriptions_tool, predict_cashflow_tool
+from tools.kyc import verify_aadhaar, verify_live_face_kyc, verify_gst
+from tools.statements import generate_account_statement, explain_transaction
+from tools.wealth import calculate_sip_tool, recommend_portfolio_tool, search_market_stocks_tool
+from tools.policies import get_policy_details_tool, compare_policies_tool
+from database.models.banking import Customer
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -75,6 +80,14 @@ class ToolGateway:
                     repo=repo,
                     customer_id=customer_id,
                     name=parameters["name"]
+                )
+            elif tool_name == "add_beneficiary":
+                result = await add_beneficiary(
+                    repo=repo,
+                    customer_id=customer_id,
+                    name=parameters["name"],
+                    account_number=parameters["account_number"],
+                    ifsc_code=parameters.get("ifsc_code", "NOVA0001001")
                 )
             elif tool_name == "list_beneficiaries":
                 result = await list_beneficiaries(repo=repo, customer_id=customer_id)
@@ -207,6 +220,87 @@ class ToolGateway:
                     repo=repo,
                     customer_id=customer_id,
                     proposed_debit=parameters.get("proposed_debit", 0.0)
+                )
+
+            # Institutional KYC Tools
+            elif tool_name == "verify_aadhaar":
+                result = await verify_aadhaar(
+                    repo=repo,
+                    customer_id=customer_id,
+                    aadhaar_number=parameters["aadhaar_number"],
+                    declared_name=parameters.get("declared_name", ""),
+                    image_b64=parameters.get("image_b64")
+                )
+            elif tool_name == "verify_live_face_kyc":
+                result = await verify_live_face_kyc(
+                    repo=repo,
+                    customer_id=customer_id,
+                    selfie_b64=parameters["selfie_b64"],
+                    aadhaar_b64=parameters.get("aadhaar_b64"),
+                    ear_metrics=parameters.get("ear_metrics")
+                )
+            elif tool_name == "verify_gst":
+                result = await verify_gst(
+                    repo=repo,
+                    customer_id=customer_id,
+                    gstin=parameters["gstin"],
+                    company_name=parameters["company_name"],
+                    business_type=parameters.get("business_type", "Private Limited"),
+                    certificate_b64=parameters.get("certificate_b64")
+                )
+
+            # Bank Account Statements & Transaction Explainer
+            elif tool_name == "generate_account_statement":
+                customer = await repo.session.get(Customer, customer_id)
+                ext_id = customer.external_id if customer else f"CUST-{customer_id}"
+                result = await generate_account_statement(
+                    repo=repo,
+                    customer_external_id=parameters.get("customer_external_id", ext_id),
+                    period_type=parameters.get("period_type"),
+                    account_number=parameters.get("account_number")
+                )
+            elif tool_name == "explain_transaction":
+                customer = await repo.session.get(Customer, customer_id)
+                ext_id = customer.external_id if customer else f"CUST-{customer_id}"
+                result = await explain_transaction(
+                    repo=repo,
+                    customer_external_id=parameters.get("customer_external_id", ext_id),
+                    transaction_ref=parameters.get("transaction_ref"),
+                    query_type=parameters.get("query_type")
+                )
+
+            # Wealth Advisory & Free Market Tools
+            elif tool_name == "calculate_sip":
+                result = await calculate_sip_tool(
+                    monthly_investment=parameters.get("monthly_investment", 500.0),
+                    tenure_years=parameters.get("tenure_years", 5),
+                    annual_expected_cagr=parameters.get("annual_expected_cagr", 12.0),
+                    user_persona=parameters.get("user_persona", "STUDENT"),
+                    risk_profile=parameters.get("risk_profile", "MODERATE")
+                )
+            elif tool_name == "recommend_portfolio":
+                result = await recommend_portfolio_tool(
+                    monthly_amount=parameters.get("monthly_amount", 1000.0),
+                    user_persona=parameters.get("user_persona", "STUDENT"),
+                    risk_profile=parameters.get("risk_profile", "MODERATE")
+                )
+            elif tool_name == "search_market_stocks":
+                result = await search_market_stocks_tool(
+                    query=parameters.get("query", "best stocks"),
+                    symbol=parameters.get("symbol")
+                )
+
+            # Insurance & Banking Policy Tools
+            elif tool_name == "get_policy_details":
+                result = await get_policy_details_tool(
+                    policy_id=parameters.get("policy_id"),
+                    category=parameters.get("category"),
+                    query=parameters.get("query")
+                )
+            elif tool_name == "compare_policies":
+                result = await compare_policies_tool(
+                    policy_a_id=parameters.get("policy_a_id", ""),
+                    policy_b_id=parameters.get("policy_b_id", "")
                 )
 
             else:

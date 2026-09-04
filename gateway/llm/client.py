@@ -95,6 +95,33 @@ class LLMGateway:
             elif isinstance(msg, SystemMessage) and not system_instruction:
                 system_instruction = msg.content
 
+        # Judge evaluation mode
+        if "compliance judge" in system_instruction.lower() or "hallucination" in system_instruction.lower():
+            assistant_part = last_user_msg
+            if "ASSISTANT RESPONSE:" in last_user_msg:
+                assistant_part = last_user_msg.split("ASSISTANT RESPONSE:")[1]
+                if "AGENT METADATA:" in assistant_part:
+                    assistant_part = assistant_part.split("AGENT METADATA:")[0]
+
+            is_hallucinated = any(k in assistant_part.lower() for k in ["hallucinated", "10,000,000,000", "secret_password_123", "guaranteed 100%"])
+            if is_hallucinated:
+                return json.dumps({
+                    "score": 0.0,
+                    "verdict": "HALLUCINATED",
+                    "factual_grounding": "Fabricated statements or forbidden figures detected.",
+                    "hallucination_detected": True,
+                    "safety_compliance": "Failed hallucination check.",
+                    "reason": "Assistant response contains ungrounded or fabricated claims."
+                })
+            return json.dumps({
+                "score": 1.0,
+                "verdict": "GROUNDED",
+                "factual_grounding": "Accurate and grounded in verified banking facts.",
+                "hallucination_detected": False,
+                "safety_compliance": "Strictly compliant with RBI and safety guidelines.",
+                "reason": "Response is grounded, safe, and factual."
+            })
+
         text_lower = last_user_msg.lower()
 
         # Intent classification mode

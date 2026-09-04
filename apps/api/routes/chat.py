@@ -149,7 +149,8 @@ async def _handle_chat_impl(request: ChatRequest):
         "customer_external_id": customer_external_id,
         "customer_name": customer_name,
         "widget_type": None,
-        "widget_data": None
+        "widget_data": None,
+        "kyc_payload": request.kyc_payload
     }
 
     try:

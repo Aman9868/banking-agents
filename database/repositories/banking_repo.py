@@ -1,6 +1,6 @@
 """Repository for secure, parameterized data access on Customers, Accounts, and Transactions."""
 
-from typing import List, Optional
+from typing import List, Optional, Any
 from datetime import datetime, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,6 +31,10 @@ class BankingRepository:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_customer_by_id(self, customer_id: int) -> Optional[Customer]:
+        return await self.session.get(Customer, customer_id)
+
+
     async def get_accounts_by_customer_id(self, customer_id: int) -> List[Account]:
         query = select(Account).where(Account.customer_id == customer_id)
         result = await self.session.execute(query)
@@ -54,20 +58,87 @@ class BankingRepository:
         result = await self.session.execute(query)
         return result.scalars().first()
 
+    async def create_beneficiary(
+        self,
+        customer_id: int,
+        name: str,
+        account_number: str,
+        ifsc_code: str = "NOVA0001001",
+        status: str = "ACTIVE"
+    ) -> Beneficiary:
+        clean_name = " ".join(w.capitalize() for w in name.strip().split())
+        existing = await self.find_beneficiary_by_name(customer_id, clean_name)
+        if existing:
+            existing.account_number = account_number.strip()
+            existing.ifsc_code = ifsc_code.strip().upper()
+            existing.status = status
+            await self.session.commit()
+            return existing
+
+        bene = Beneficiary(
+            customer_id=customer_id,
+            name=clean_name,
+            account_number=account_number.strip(),
+            ifsc_code=ifsc_code.strip().upper(),
+            status=status
+        )
+        self.session.add(bene)
+        await self.session.commit()
+        return bene
+
     async def get_transaction_by_ref(self, transaction_ref: str) -> Optional[Transaction]:
-        query = select(Transaction).where(Transaction.transaction_ref == transaction_ref)
+        from sqlalchemy.orm import selectinload
+        query = (
+            select(Transaction)
+            .options(selectinload(Transaction.beneficiary), selectinload(Transaction.source_account))
+            .where(Transaction.transaction_ref == transaction_ref)
+        )
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
     async def get_recent_transactions(self, customer_id: int, limit: int = 5) -> List[Transaction]:
+        from sqlalchemy.orm import selectinload
         query = (
             select(Transaction)
+            .options(selectinload(Transaction.beneficiary), selectinload(Transaction.source_account))
             .where(Transaction.customer_id == customer_id)
             .order_by(Transaction.created_at.desc())
             .limit(limit)
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def get_transactions_in_range(
+        self,
+        customer_id: int,
+        start_date: Any,
+        end_date: Any,
+        account_id: Optional[int] = None
+    ) -> List[Transaction]:
+        """Fetch transactions within a date range ordered chronologically."""
+        from sqlalchemy.orm import selectinload
+        if hasattr(start_date, "tzinfo") and start_date.tzinfo:
+            start_date = start_date.replace(tzinfo=None)
+        if hasattr(end_date, "tzinfo") and end_date.tzinfo:
+            end_date = end_date.replace(tzinfo=None)
+
+        conditions = [
+            Transaction.customer_id == customer_id,
+            Transaction.created_at >= start_date,
+            Transaction.created_at <= end_date
+        ]
+        if account_id is not None:
+            conditions.append(Transaction.source_account_id == account_id)
+
+        query = (
+            select(Transaction)
+            .options(selectinload(Transaction.beneficiary), selectinload(Transaction.source_account))
+            .where(*conditions)
+            .order_by(Transaction.created_at.asc())
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
 
     async def create_transaction(
         self,
@@ -379,4 +450,66 @@ class BankingRepository:
         ).order_by(ChatMessage.created_at.asc())
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def update_customer_aadhaar_kyc(
+        self,
+        customer_id: int,
+        aadhaar_masked: str,
+        aadhaar_data: Optional[dict] = None
+    ) -> Optional[Customer]:
+        customer = await self.session.get(Customer, customer_id)
+        if customer:
+            customer.aadhaar_number_masked = aadhaar_masked
+            customer.aadhaar_verified = True
+            customer.aadhaar_data = aadhaar_data
+            await self.session.flush()
+        return customer
+
+    async def update_customer_biometric_kyc(
+        self,
+        customer_id: int,
+        selfie_url: str,
+        face_match_score: float,
+        liveness_verified: bool = True
+    ) -> Optional[Customer]:
+        customer = await self.session.get(Customer, customer_id)
+        if customer:
+            customer.live_selfie_url = selfie_url
+            customer.face_match_score = face_match_score
+            customer.liveness_verified = liveness_verified
+            customer.kyc_mode = "DIGITAL_VIDEO_KYC"
+            customer.kyc_status = "VERIFIED"
+            await self.session.flush()
+        return customer
+
+    async def update_customer_business_gst(
+        self,
+        customer_id: int,
+        company_name: str,
+        business_type: str,
+        gstin: str,
+        gst_details: Optional[dict] = None
+    ) -> Optional[Customer]:
+        customer = await self.session.get(Customer, customer_id)
+        if customer:
+            customer.company_name = company_name
+            customer.business_type = business_type
+            customer.gstin = gstin
+            customer.gst_verified = True
+            customer.gst_details = gst_details
+            await self.session.flush()
+        return customer
+
+    async def get_account_by_customer_and_type(
+        self,
+        customer_id: int,
+        account_type: str
+    ) -> Optional[Account]:
+        query = select(Account).where(
+            Account.customer_id == customer_id,
+            Account.account_type == account_type.upper()
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
+
 

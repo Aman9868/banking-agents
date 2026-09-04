@@ -8,6 +8,8 @@ from apps.api.config import settings
 from apps.api.routes.chat import router as chat_router
 from apps.api.routes.admin import router as admin_router
 from apps.api.routes.health import router as health_router
+from apps.api.routes.kyc import router as kyc_router
+from apps.api.routes.statements import router as statements_router
 from security.headers import SecurityHeadersMiddleware
 from security.tracing import CorrelationIdMiddleware
 from gateway.rate_limit.limiter import RateLimitMiddleware
@@ -72,6 +74,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health_router)
 app.include_router(chat_router)
 app.include_router(admin_router)
+app.include_router(kyc_router)
+app.include_router(statements_router)
 
 # Mount ChatGPT-Style Frontend UI
 import os

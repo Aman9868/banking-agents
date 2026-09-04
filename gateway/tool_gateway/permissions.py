@@ -13,6 +13,8 @@ class AgentRole(str, Enum):
     PAYMENTS_AGENT = "payments_agent"
     SUPPORT_AGENT = "support_agent"
     INSIGHTS_AGENT = "insights_agent"
+    WEALTH_ADVISOR = "wealth_advisor"
+    POLICY_ADVISOR = "policy_advisor"
 
 
 class ToolPermissionDeniedError(Exception):
@@ -20,23 +22,43 @@ class ToolPermissionDeniedError(Exception):
     pass
 
 
-# Strict Least-Privilege Permission Matrix for all 6 specialized banking agents
+# Strict Least-Privilege Permission Matrix for all specialized banking agents
 AGENT_TOOL_PERMISSIONS: Dict[AgentRole, Set[str]] = {
     AgentRole.SUPERVISOR: {
         "get_balance",
         "get_accounts",
         "get_cards",
         "search_knowledge_base",
+        "add_beneficiary",
+        "get_transaction",
+        "get_recent_transactions",
+        "verify_aadhaar",
+        "verify_live_face_kyc",
+        "verify_gst",
+        "generate_account_statement",
+        "explain_transaction",
+        "calculate_sip",
+        "recommend_portfolio",
+        "search_market_stocks",
+        "get_policy_details",
+        "compare_policies",
     },
     AgentRole.TRANSFER_AGENT: {
         "get_balance",
         "get_beneficiary",
         "list_beneficiaries",
+        "add_beneficiary",
         "initiate_transfer",
+        "get_transaction",
+        "get_recent_transactions",
     },
+
     AgentRole.ACCOUNT_AGENT: {
         "check_customer_profile",
         "create_account",
+        "verify_aadhaar",
+        "verify_live_face_kyc",
+        "verify_gst",
     },
     AgentRole.CARD_AGENT: {
         "get_cards",
@@ -64,12 +86,31 @@ AGENT_TOOL_PERMISSIONS: Dict[AgentRole, Set[str]] = {
         "get_accounts",
         "create_support_ticket",
         "search_knowledge_base",
+        "explain_transaction",
+        "get_policy_details",
     },
     AgentRole.INSIGHTS_AGENT: {
         "get_spending_insights",
         "detect_subscriptions",
         "predict_cashflow",
         "get_balance",
+        "get_accounts",
+        "generate_account_statement",
+        "explain_transaction",
+        "calculate_sip",
+        "recommend_portfolio",
+    },
+    AgentRole.WEALTH_ADVISOR: {
+        "calculate_sip",
+        "recommend_portfolio",
+        "search_market_stocks",
+        "get_balance",
+        "get_accounts",
+    },
+    AgentRole.POLICY_ADVISOR: {
+        "get_policy_details",
+        "compare_policies",
+        "search_knowledge_base",
         "get_accounts",
     }
 }

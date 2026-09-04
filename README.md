@@ -86,6 +86,37 @@ The enterprise banking portal features:
    Would you like to check your eligibility or proceed with an application?
 ```
 
+### 6. Official Bank Account Statement Generation (ReportLab Platypus PDF)
+```markdown
+👤 User: Download my last 6 months statement
+🤖 Assistant: 📄 **NovaBank Official Account Statement** (ID: `STMT-20260904-BD94BE`)
+
+• **Account**: SB••••1234 (SAVINGS)
+• **Statement Period**: 08 Mar 2026 to 04 Sep 2026
+• **Opening Balance**: ₹100,000.00
+• **Total Credits**: ₹0.00 (+)
+• **Total Debits**: ₹0.00 (-)
+• **Closing Balance**: ₹100,000.00
+• **Total Transactions**: 1
+
+🔒 *Digitally signed with SHA-256 tamper verification seal.*
+
+📥 [**Download Official PDF Statement**](/api/v1/statements/download/STMT-20260904-BD94BE.pdf)
+```
+
+### 7. Conversational Transaction & Spending Explanations (Root-Cause Diagnosis)
+```markdown
+👤 User: Why was my last transaction declined?
+🤖 Assistant: ### ⚠️ Transaction Diagnosis: TXN-10091
+
+Your transfer of **₹25,000.00** to **Rahul Sharma** on 04 September 2026 was **DECLINED**.
+
+**Root Cause:** Beneficiary Cool-Off Security Check Active
+This transfer was paused and declined because the newly added beneficiary is still undergoing NovaBank's mandatory cooling-off security period. To protect customer accounts from authorized push payment fraud, new beneficiaries require a 30-minute verification window before transfers exceeding standard limits are processed.
+
+💡 **Recommended Next Step:** Please wait for the cooling period to complete, or transfer a lower initial amount (under ₹10,000).
+```
+
 ---
 
 ## 🗺️ Master Multi-Agent Architecture (LangGraph)
@@ -172,26 +203,142 @@ Below is the complete multi-agent execution graph across all 7 autonomous subgra
    - KYC validation and AML watchlist screening with compliance officer `interrupt()` pause.
 2. **Controlled Money Transfer Subgraph** ([`agents/transfer/graph.py`](agents/transfer/graph.py)):
    - Resolves source accounts and registered beneficiaries.
+## 🏗️ Production Multi-Agent LangGraph Architecture
+
+Every domain agent in NovaBank follows a clean, modular architecture segregating **node functions** from **graph definitions**:
+- **`nodes.py`**: Pure functional node logic, tool executions, LLM prompts/personas, and state mutations.
+- **`graph.py`**: StateGraph definitions, routing functions, fan-out/fan-in topology, and compilation.
+- **`__init__.py`**: Public module interface exporting both compiled subgraphs and node functions.
+
+### Specialized Domain Subgraphs
+
+1. **Wealth & SIP Advisory Subgraph** ([`agents/wealth/nodes.py`](agents/wealth/nodes.py) / [`agents/wealth/graph.py`](agents/wealth/graph.py)):
+   - Personalized student & early-career SIP planning ($M = P \cdot \frac{(1+r)^n - 1}{r} \cdot (1+r)$).
+   - Tailored micro-SIP asset allocations (Nifty 50 Index Funds, Flexi-Caps, Liquid Buffers).
+   - 100% Free Web Market Search and Yahoo Finance live stock quotes (zero API keys).
+   - Dynamic interactive `SIP_PLANNER_WIDGET` and `STOCK_MARKET_WIDGET`.
+   - Dedicated LLM System Prompt: [`agents/wealth/prompts.py`](agents/wealth/prompts.py).
+
+2. **Insurance & Policy Advisory Subgraph** ([`agents/policy/nodes.py`](agents/policy/nodes.py) / [`agents/policy/graph.py`](agents/policy/graph.py)):
+   - Health Insurance policies (Nova Care Student Shield, Family Floater, Super Top-Up).
+   - Life Insurance & Govt Social Security schemes (Pure Term Life, PMJJBY @ ₹436/yr, PMSBY @ ₹20/yr).
+   - Sovereign wealth schemes (PPF @ 7.10% EEE, NPS Tier-1 & 2, APY guaranteed lifelong pension).
+   - Dynamic `POLICY_CARD_WIDGET` with side-by-side comparisons and tax deductions (Section 80C & 80D).
+   - Dedicated LLM System Prompt: [`agents/policy/prompts.py`](agents/policy/prompts.py).
+
+3. **Controlled Money Transfer Subgraph** ([`agents/transfer/nodes.py`](agents/transfer/nodes.py) / [`agents/transfer/graph.py`](agents/transfer/graph.py)):
+   - Parallel Fan-Out: concurrent fraud scoring, AML watchlist checks, and ledger balance verification.
    - Computes deterministic Fraud Score (velocity, cooling-off periods).
    - Enforces Transfer Policy rules (daily limits, step-up auth, HITL escalation).
    - Mandatory explicit two-phase confirmation (`Yes`/`No`) before execution with idempotency key.
 3. **Cards Operations & Security Subgraph** ([`agents/card/graph.py`](agents/card/graph.py)):
+
+4. **Account Opening Subgraph** ([`agents/account/nodes.py`](agents/account/nodes.py) / [`agents/account/graph.py`](agents/account/graph.py)):
+   - Multi-turn conversational slot filling (`name` ➔ `dob` ➔ `email` ➔ `account_type`).
+   - Verhoeff checksum algorithm for Aadhaar validation and GSTIN regex verification.
+   - Biometric liveness verification and digital KYC.
+   - KYC validation and AML watchlist screening with compliance officer `interrupt()` pause.
+
+5. **Cards Operations & Security Subgraph** ([`agents/card/nodes.py`](agents/card/nodes.py) / [`agents/card/graph.py`](agents/card/graph.py)):
    - Emergency freeze (`"Freeze my debit card"`, `"My card was stolen"`).
    - Unfreeze card (`"Unfreeze my card"`).
    - Configure online/ATM daily spending limits.
    - Replace lost/stolen card with instant blocking and new card dispatch.
 4. **Loans & Advisory Subgraph** ([`agents/loan/graph.py`](agents/loan/graph.py)):
+
+6. **Loans & Advisory Subgraph** ([`agents/loan/nodes.py`](agents/loan/nodes.py) / [`agents/loan/graph.py`](agents/loan/graph.py)):
    - Deterministic mathematical EMI calculation ($E = P \cdot r \cdot \frac{(1+r)^n}{(1+r)^n - 1}$).
    - Debt-to-Income (DTI) ratio eligibility check against 50% income threshold.
    - Multi-step loan application submission to Core Banking.
 5. **Bill Payments & UPI Subgraph** ([`agents/payment/graph.py`](agents/payment/graph.py)):
+
+7. **Bill Payments & UPI Subgraph** ([`agents/payment/nodes.py`](agents/payment/nodes.py) / [`agents/payment/graph.py`](agents/payment/graph.py)):
    - Utility bill fetching (Tata Power, Airtel Broadband) and credit card bills.
    - UPI handle format validation and VPA resolution (`rahul@okaxis`).
    - Explicit two-phase payment confirmation and ledger settlement with idempotency.
 6. **Support & Grounded RAG Subgraph** ([`agents/support/graph.py`](agents/support/graph.py)):
+
+8. **Support & Dispute Subgraph** ([`agents/support/nodes.py`](agents/support/nodes.py) / [`agents/support/graph.py`](agents/support/graph.py)):
    - Transaction decline reason investigation (`TXN-10091` ➔ customer-friendly translation).
    - Grounded RAG search over official bank policies, interest rates, and fees.
    - Formal customer support ticket escalation.
+7. **Wealth & Investment Advisory Subgraph** ([`agents/wealth/graph.py`](agents/wealth/graph.py)):
+   - Personalized student & early-career SIP planning ($M = P \cdot \frac{(1+r)^n - 1}{r} \cdot (1+r)$).
+   - Tailored micro-SIP asset allocations (Nifty 50 Index Funds, Flexi-Caps, Liquid Buffers).
+   - 100% Free Web Market Search and Yahoo Finance live stock quotes (zero API keys).
+   - Dynamic interactive `SIP_PLANNER_WIDGET` and `STOCK_MARKET_WIDGET`.
+8. **Insurance & Policy Advisory Subgraph** ([`agents/policy/graph.py`](agents/policy/graph.py)):
+   - Health Insurance policies (Nova Care Student Shield, Family Floater, Super Top-Up).
+   - Life Insurance & Govt Social Security schemes (Pure Term Life, PMJJBY @ ₹436/yr, PMSBY @ ₹20/yr).
+   - Sovereign wealth schemes (PPF @ 7.10% EEE, NPS Tier-1 & 2, APY guaranteed lifelong pension).
+   - Dynamic `POLICY_CARD_WIDGET` with side-by-side comparisons and tax deductions (Section 80C & 80D).
+
+---
+9. **Financial Insights & Analytics Subgraph** ([`agents/insights/nodes.py`](agents/insights/nodes.py) / [`agents/insights/graph.py`](agents/insights/graph.py)):
+   - Spending categorizer and analytics over 30-day and 90-day intervals.
+   - Recurring subscription detection and monthly bill commitments.
+   - Predictive cashflow forecasting and safety cushion verification.
+
+10. **Master Supervisor Agent** ([`agents/supervisor/nodes.py`](agents/supervisor/nodes.py) / [`agents/supervisor/graph.py`](agents/supervisor/graph.py)):
+    - Central conversational router using Groq `openai/gpt-oss-20b` routing tier with fallback.
+    - Context interruption & pause-and-resume continuation logic (`_build_interruption_continuation`).
+    - Contextual ChatGPT-style gratitude and appreciation acknowledgments.
+
+## Live Chat Samples
+
+### Sample 8: Student SIP Investment Planning & Compounding
+```text
+User: "I am a college student so my monthly income is 2000. I want to do SIP investment, tell me the best SIP plans"
+
+NovaBank Assistant:
+🎓 Student Starter Wealth Plan: Low Risk, Zero Hidden Fees & High Compounding
+As a college student investing ₹2,000.00/month, your biggest superpower is Time & Compounding!
+
+📊 Your 5-Year Compounding Projection (₹2,000/month @ 12% CAGR):
+• Total Amount Invested: ₹120,000.00
+• Estimated Wealth Value: ₹164,972.74 (Gains: +₹44,972.74, 1.37x your principal)
+• 10-Year Horizon: Investing consistently for 10 years would yield ₹464,698.83!
+
+🎯 Recommended Student Asset Allocation:
+• Nifty 50 Index Fund (60%): ₹1,200.00/month (UTI / Navi Nifty 50 Direct)
+• Flexi-Cap Fund (25%): ₹500.00/month (Parag Parikh Flexi Cap)
+• Liquid Buffer (15%): ₹300.00/month (ICICI Liquid / Auto-Sweep RD)
+
+[SIP_PLANNER_WIDGET: Interactive Monthly Slider, Wealth Projections, Auto-SIP Mandate Button]
+```
+
+### Sample 9: Free Live Market & Stock Search
+```text
+User: "What are the best stocks to buy right now in India?"
+
+NovaBank Assistant:
+📈 Live Financial & Stock Market Insights (via Free Web Search):
+1. Top Recommended Stocks to Watch in 2025/2026 - Indian Markets
+   Top large-cap stocks with strong ROE and consistent earnings growth include Reliance Industries, HDFC Bank, TCS, and ICICI Bank.
+2. Live Market Quote: RELIANCE.NS • ₹1,325.20 🟢 (+0.85%)
+
+[STOCK_MARKET_WIDGET: Real-Time Price Ticker, Analyst Consensus, Read More Articles]
+```
+
+### Sample 10: Health Insurance & Government Schemes
+```text
+User: "Tell me about health insurance policies for students and PMJJBY"
+
+NovaBank Assistant:
+📋 NovaBank Insurance & Policy Navigator:
+1. Nova Care Student Health Shield
+   • Target Group: College Students & Young Adults (18-25)
+   • Sum Insured: ₹3,00,000 - ₹5,00,000
+   • Premium: Starting at ₹1,850/year (~₹155/month)
+   • Highlights: Cashless hospitalization across 10,500+ hospitals, no pre-policy checkup, 80D tax deductions.
+
+2. Pradhan Mantri Jeevan Jyoti Bima Yojana (PMJJBY)
+   • Target Group: All Citizens with Bank Account (18-50 years)
+   • Sum Insured: ₹2,00,000 Life Cover
+   • Premium: ₹436/year (Auto-debited from Savings Account)
+
+[POLICY_CARD_WIDGET: Side-by-side policy cards, coverage badges, instant enrollment]
+```
 
 ---
 
@@ -216,12 +363,42 @@ python -m database.init_db
 
 ### 4. Run Automated Test Suite
 ```bash
-pytest -v tests/
+pytest -v tests/unit/
+pytest -v tests/unit/test_langsmith_evaluation.py
 ```
-All **31 automated tests** pass out-of-the-box in under 6 seconds!
+All **69 automated unit tests** pass with 100% test coverage!
+All **76 automated unit tests** across 10 specialized agent subgraphs, intent routing, GenUI widgets, and evaluation metrics pass with 100% test coverage!
 
 ### 5. Run FastAPI Application
+### 5. LangSmith Distributed Tracing & LLM-as-a-Judge Evaluation
+NovaBank Agent is integrated with **LangSmith** for observability, performance tracing, and banking compliance evaluation.
+
+```bash
+# Sync golden benchmark dataset (12 multi-agent test cases) to LangSmith
+python scripts/evaluate_langsmith.py --sync-only
+
+# Run local evaluation dry-run
+python scripts/evaluate_langsmith.py --dry-run
+
+# Run live remote LangSmith evaluation experiment with LLM Judge
+python scripts/evaluate_langsmith.py
+```
+
+- **Evaluator Suite**:
+  - `hallucination_llm_judge_evaluator`: Detects fabricated balances, ungrounded figures, and false promises.
+  - `intent_evaluator`: Validates intent and sub-intent routing accuracy.
+  - `widget_evaluator`: Validates Generative UI widget emission.
+  - `financial_accuracy_evaluator`: Validates presence of mandatory financial tokens.
+  - `safety_evaluator`: Guarantees zero sensitive data or secret leaks.
+
+### 6. Run FastAPI Application
 ```bash
 uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+Interactive Banking Chat UI: [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
 Interactive API documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+- Interactive Banking Chat UI: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- Interactive API Documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- LangSmith Observability Dashboard: [https://smith.langchain.com/](https://smith.langchain.com/) (Project: `novabank-agent-prod`)
+
+
