@@ -664,6 +664,37 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
 
     # 5b. Beneficiary Management & FAQ (intercept before Transfer Subgraph)
     lower_msg = last_msg.lower()
+    if any(k in lower_msg for k in ["beneficiar", "beeficiar"]) and any(k in lower_msg for k in ["list", "show", "who", "view", "my", "all", "have", "saved", "details", "check", "any", "whom"]):
+        customer_id = state.get("customer_id", 1)
+        async with AsyncSessionLocal() as session:
+            repo = BankingRepository(session)
+            benes = await repo.get_beneficiaries(customer_id)
+            if not benes:
+                bene_resp = (
+                    "You currently do not have any registered beneficiaries saved on your account.\n\n"
+                    "To add a new beneficiary, simply provide their **Full Name**, **Account Number**, and **IFSC Code** (e.g. *'Add beneficiary Priya Sharma, account 9876543210, IFSC NOVA0001001'*)."
+                )
+            else:
+                lines = [f"Here are your registered beneficiaries ({len(benes)} saved):\n"]
+                for b in benes:
+                    masked_acc = mask_account_number(b.account_number)
+                    lines.append(f"• **{b.name}** — Account: `{masked_acc}`, IFSC: `{b.ifsc_code}` [{b.status}]")
+                first_name = benes[0].name.split()[0]
+                lines.append(f"\nTo send money to any of them, just say *'Transfer ₹1,000 to {first_name}'*.")
+                bene_resp = "\n".join(lines)
+
+        return {
+            "current_intent": "KNOWLEDGE_FAQ",
+            "current_sub_intent": "BENEFICIARY_MANAGEMENT",
+            "active_workflow": "NONE",
+            "transfer_data": {},
+            "final_response": bene_resp,
+            "messages": [AIMessage(content=bene_resp)],
+            "customer_memory": memory,
+            "widget_type": None,
+            "widget_data": None
+        }
+
     if any(k in lower_msg for k in ["beneficiar", "beeficiar"]) and any(k in lower_msg for k in ["how to", "how do", "add", "register", "create", "new"]):
         if any(k in lower_msg for k in ["how to", "how do", "process", "steps"]):
             bene_msg = (

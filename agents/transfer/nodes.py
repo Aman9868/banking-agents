@@ -2,8 +2,9 @@
 
 import uuid
 import re
+import json
 from typing import Dict, Any, Optional
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import interrupt
 from agents.state import BankingSessionState, TransferWorkflowData
@@ -11,6 +12,7 @@ from database.connection import AsyncSessionLocal
 from database.repositories.banking_repo import BankingRepository
 from gateway.tool_gateway.gateway import tool_gateway
 from gateway.tool_gateway.permissions import AgentRole
+from gateway.llm.client import llm_gateway
 from services.fraud.engine import fraud_engine, FraudAssessment
 from policies.transfer import transfer_policy_engine, PolicyDecision
 from security.pii import mask_account_number
@@ -18,6 +20,60 @@ from security.validators import validate_account_number, validate_ifsc_code
 import structlog
 
 logger = structlog.get_logger(__name__)
+
+
+async def extract_transfer_entities_llm(
+    last_msg: str,
+    current_data: Dict[str, Any],
+    previous_question: str = ""
+) -> Dict[str, Any]:
+    """Uses LLM routing tier for conversational entity extraction across multi-turn transfer flow."""
+    if not last_msg or len(last_msg.strip()) < 2:
+        return {}
+
+    prompt = f"""You are a conversational entity extractor for a banking fund transfer system.
+Analyze the user's message and extract transfer parameters based on the current dialog state.
+
+Current transfer state:
+- Beneficiary Name: {current_data.get('beneficiary_name') or 'Not provided'}
+- Beneficiary Account: {current_data.get('beneficiary_account') or 'Not provided'}
+- IFSC Code: {current_data.get('ifsc_code') or 'Not provided'}
+- Amount: {current_data.get('amount') or 'Not provided'}
+- Previous assistant question: "{previous_question}"
+
+User message: "{last_msg}"
+
+Rules:
+1. If the previous question asked for a beneficiary name, and user provided a name (e.g. "Rahul", "Priya", "John Smith"), extract as "beneficiary_name".
+2. If the user provided an amount (e.g. "500", "5k", "₹10,000", "two thousand"), parse and return float as "amount".
+3. If the user provided a bank account number (9 to 18 digits) or phone/UPI number (10 digits), extract as "account_number".
+4. If the user provided an IFSC code (11 characters starting with 4 letters), extract as "ifsc_code".
+
+Respond strictly with valid JSON:
+{{
+  "beneficiary_name": null,
+  "amount": null,
+  "account_number": null,
+  "ifsc_code": null
+}}"""
+
+    try:
+        res = await llm_gateway.invoke_chat([
+            SystemMessage(content=prompt),
+            HumanMessage(content=last_msg)
+        ], model_tier="routing")
+
+        content = res.content.strip()
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0].strip()
+
+        parsed = json.loads(content)
+        return {k: v for k, v in parsed.items() if v is not None}
+    except Exception as exc:
+        logger.warning("LLM transfer entity extraction fallback", error=str(exc))
+        return {}
 
 
 async def resolve_transfer_entities_node(state: BankingSessionState) -> Dict[str, Any]:
@@ -56,32 +112,50 @@ async def resolve_transfer_entities_node(state: BankingSessionState) -> Dict[str
             data["source_account_id"] = target_acc.id
             data["source_account_number"] = target_acc.account_number
 
-        # 2. Extract candidate beneficiary account details and IFSC from message
-        cand_acc = None
-        acc_m = re.search(r"(?:acc(?:ount)?\s*(?:no|num|number)?\s*[-:=]?\s*)([A-Za-z0-9]+)\b", last_msg, re.IGNORECASE)
-        if acc_m:
-            cand_acc = acc_m.group(1).strip()
-        elif not data.get("beneficiary_account"):
-            raw_d = re.findall(r"\b(\d{3,24})\b", last_msg)
-            for d in raw_d:
-                if data.get("amount") and float(d) == data.get("amount"):
-                    continue
-                cand_acc = d
+        # 0. Conversational Context & LLM Structured Entity Extraction
+        prev_ai_q = ""
+        for msg in reversed(state.get("messages", [])):
+            if isinstance(msg, AIMessage) or getattr(msg, "type", None) == "ai":
+                prev_ai_q = msg.content
                 break
 
-        cand_ifsc = None
-        ifsc_m = re.search(r"(?:ifsc(?:\s*code)?\s*[-:=]?\s*)([A-Za-z0-9]+)\b", last_msg, re.IGNORECASE)
-        if ifsc_m:
-            cand_ifsc = ifsc_m.group(1).upper().strip()
-        elif not data.get("ifsc_code"):
-            raw_tokens = re.findall(r"\b([A-Za-z0-9]{8,14})\b", last_msg)
-            for tok in raw_tokens:
-                u = tok.upper()
-                if re.match(r"^[A-Z]{4}", u) and any(c.isdigit() for c in u) and u not in ["TRANSFER", "TXN", "CUST", "GUEST", "SAVINGS", "CURRENT"]:
-                    if cand_acc and cand_acc.upper() == u:
+        llm_slots = await extract_transfer_entities_llm(last_msg, data, prev_ai_q)
+        if llm_slots.get("beneficiary_name") and not data.get("beneficiary_name"):
+            data["beneficiary_name"] = llm_slots["beneficiary_name"]
+        if llm_slots.get("amount") and not data.get("amount"):
+            try:
+                data["amount"] = float(llm_slots["amount"])
+            except (ValueError, TypeError):
+                pass
+
+        # 1. Extract candidate beneficiary account details and IFSC from message
+        cand_acc = str(llm_slots["account_number"]) if llm_slots.get("account_number") else None
+        if not cand_acc:
+            acc_m = re.search(r"(?:acc(?:ount)?\s*(?:no|num|number)?\s*[-:=]?\s*)([A-Za-z0-9]+)\b", last_msg, re.IGNORECASE)
+            if acc_m:
+                cand_acc = acc_m.group(1).strip()
+            elif not data.get("beneficiary_account"):
+                raw_d = re.findall(r"\b(\d{3,24})\b", last_msg)
+                for d in raw_d:
+                    if data.get("amount") and float(d) == data.get("amount"):
                         continue
-                    cand_ifsc = u
+                    cand_acc = d
                     break
+
+        cand_ifsc = str(llm_slots["ifsc_code"]).upper() if llm_slots.get("ifsc_code") else None
+        if not cand_ifsc:
+            ifsc_m = re.search(r"(?:ifsc(?:\s*code)?\s*[-:=]?\s*)([A-Za-z0-9]+)\b", last_msg, re.IGNORECASE)
+            if ifsc_m:
+                cand_ifsc = ifsc_m.group(1).upper().strip()
+            elif not data.get("ifsc_code"):
+                raw_tokens = re.findall(r"\b([A-Za-z0-9]{8,14})\b", last_msg)
+                for tok in raw_tokens:
+                    u = tok.upper()
+                    if re.match(r"^[A-Z]{4}", u) and any(c.isdigit() for c in u) and u not in ["TRANSFER", "TXN", "CUST", "GUEST", "SAVINGS", "CURRENT"]:
+                        if cand_acc and cand_acc.upper() == u:
+                            continue
+                        cand_ifsc = u
+                        break
 
 
 
@@ -107,13 +181,42 @@ async def resolve_transfer_entities_node(state: BankingSessionState) -> Dict[str
         # Resolve beneficiary name
         bene_name = data.get("beneficiary_name")
         if not bene_name:
-            name_m = re.search(r"\b(?:add|for|to|pay|send)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", last_msg)
+            name_m = re.search(r"\b(?:add|for|to|pay|send)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)", last_msg, re.IGNORECASE)
             if name_m:
                 bene_name = name_m.group(1).strip()
                 data["beneficiary_name"] = bene_name
             elif state.get("customer_memory", {}).get("last_beneficiary_name"):
                 bene_name = state["customer_memory"]["last_beneficiary_name"]
                 data["beneficiary_name"] = bene_name
+            elif data.get("step") == "RESOLVE":
+                # User replied directly to "Who would you like to transfer funds to?"
+                cleaned = re.sub(r"[^A-Za-z\s]", "", last_msg).strip()
+                words = cleaned.split()
+                if words and len(words) <= 3 and not any(w.lower() in ["hi", "hello", "hey", "yes", "no", "cancel", "stop", "transfer", "money", "upi", "pay"] for w in words):
+                    bene_name = " ".join(w.capitalize() for w in words)
+                    data["beneficiary_name"] = bene_name
+
+        # Check if user mentioned a saved beneficiary's first or full name
+        if not bene_name:
+            saved_benes = await repo.get_beneficiaries(customer_id)
+            for sb in saved_benes:
+                first_name = sb.name.split()[0].lower()
+                if first_name in last_msg.lower() or sb.name.lower() in last_msg.lower():
+                    bene_name = sb.name
+                    data["beneficiary_name"] = bene_name
+                    data["beneficiary_id"] = sb.id
+                    data["beneficiary_account"] = sb.account_number
+                    data["ifsc_code"] = sb.ifsc_code
+                    break
+
+        # Cross-reference saved beneficiaries if beneficiary_id is not yet set
+        if bene_name and not data.get("beneficiary_id"):
+            matched_bene = await repo.find_beneficiary_by_name(customer_id, bene_name)
+            if matched_bene:
+                data["beneficiary_id"] = matched_bene.id
+                data["beneficiary_name"] = matched_bene.name
+                data["beneficiary_account"] = matched_bene.account_number
+                data["ifsc_code"] = matched_bene.ifsc_code
 
         if not bene_name:
             resp = "Who would you like to transfer funds to? Please provide the beneficiary name."
@@ -261,6 +364,28 @@ async def resolve_transfer_entities_node(state: BankingSessionState) -> Dict[str
 
         # 5. Check transfer amount
         amount = data.get("amount")
+        if not amount or amount <= 0:
+            # Try to extract amount from current message if user just replied with a number or amount
+            amt_m = re.search(r"(?:rs\.?|inr|₹|\bamount\b\s*[:=]?)\s*([\d,]+(?:\.\d+)?)\b", last_msg, re.IGNORECASE)
+            if amt_m:
+                try:
+                    amount = float(amt_m.group(1).replace(",", ""))
+                    data["amount"] = amount
+                except ValueError:
+                    pass
+            elif data.get("step") == "RESOLVE" and data.get("beneficiary_name"):
+                num_m = re.search(r"\b(\d+(?:,\d+)*(?:\.\d+)?)\s*(k|lakh|lac|cr)?\b", last_msg, re.IGNORECASE)
+                if num_m:
+                    val = float(num_m.group(1).replace(",", ""))
+                    mult = num_m.group(2)
+                    if mult:
+                        m_lower = mult.lower()
+                        if m_lower == "k": val *= 1000
+                        elif m_lower in ["lakh", "lac"]: val *= 100000
+                        elif m_lower == "cr": val *= 10000000
+                    amount = val
+                    data["amount"] = amount
+
         if not amount or amount <= 0:
             if data.get("just_added"):
                 masked_acc = mask_account_number(data["beneficiary_account"])

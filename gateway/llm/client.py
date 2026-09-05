@@ -128,6 +128,29 @@ class LLMGateway:
 
         text_lower = last_user_msg.lower()
 
+        # Entity extraction mode
+        if "entity extractor" in system_instruction.lower():
+            extracted = {}
+            if not re.search(r"\d", text_lower):
+                cleaned = re.sub(r"[^A-Za-z\s]", "", last_user_msg).strip()
+                words = cleaned.split()
+                if words and len(words) <= 3 and not any(w in text_lower for w in ["hi", "hello", "hey", "yes", "no", "cancel", "stop", "transfer", "money"]):
+                    extracted["beneficiary_name"] = " ".join(w.capitalize() for w in words)
+            amt_m = re.search(r"(?:rs\.?|inr|₹|\bamount\b\s*[:=]?)\s*([\d,]+(?:\.\d+)?)\b", last_user_msg, re.IGNORECASE)
+            if not amt_m:
+                amt_m = re.search(r"\b(\d{1,7}(?:,\d+)*(?:\.\d+)?)\b", last_user_msg)
+            if amt_m:
+                try:
+                    val = float(amt_m.group(1).replace(",", ""))
+                    if val <= 1000000:
+                        extracted["amount"] = val
+                except ValueError:
+                    pass
+            phone_m = re.search(r"\b(\d{10})\b", last_user_msg)
+            if phone_m:
+                extracted["account_number"] = phone_m.group(1)
+            return json.dumps(extracted)
+
         # Intent classification mode
         if "banking intent classification" in system_instruction.lower() or model_tier == "routing":
             # 1. Negation detection
