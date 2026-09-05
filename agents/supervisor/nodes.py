@@ -27,6 +27,13 @@ from database.connection import AsyncSessionLocal
 from database.repositories.banking_repo import BankingRepository
 from security.pii import mask_account_number
 from security.validators import validate_account_number, validate_ifsc_code
+from agents.supervisor.prompts import (
+    build_supervisor_default_menu,
+    build_interruption_continuation_prompt,
+    build_gratitude_response,
+    build_chatgpt_style_fallback_response,
+    build_system_error_fallback_response,
+)
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -38,76 +45,7 @@ def _build_interruption_continuation(
     state: BankingSessionState
 ) -> Tuple[str, str, Dict[str, Any]]:
     """Appends contextual continuation prompt for any active workflow during an interruption."""
-    if active_wf == "TRANSFER_MONEY":
-        t_data = dict(state.get("transfer_data") or {})
-        t_step = t_data.get("step")
-        bene = t_data.get("beneficiary_name", "the beneficiary")
-        acc = t_data.get("beneficiary_account")
-        ifsc = t_data.get("ifsc_code")
-        amt = t_data.get("amount")
-
-        if t_step == "ADD_BENEFICIARY":
-            if acc and not ifsc:
-                prompt = (
-                    f"\n\nNow, continuing with adding **{bene}** as a beneficiary: "
-                    "Please provide their **11-character IFSC Code** (e.g. SBIN0001234 or NOVA0001001) to proceed with the transfer."
-                )
-            elif ifsc and not acc:
-                prompt = (
-                    f"\n\nNow, continuing with adding **{bene}** as a beneficiary: "
-                    "Please provide their **Account Number** (9 to 18 digits) to proceed with the transfer."
-                )
-            else:
-                prompt = (
-                    f"\n\nNow, continuing with your transfer to **{bene}**: "
-                    "Please provide their **Account Number** and **IFSC Code** to add them as a beneficiary."
-                )
-        elif t_step == "CONFIRM":
-            amt_str = f"₹{amt:,.2f}" if amt else "the funds"
-            prompt = (
-                f"\n\nNow, continuing with your transfer: Would you like to proceed with transferring "
-                f"**{amt_str}** to **{bene}**? (Please reply 'Yes' to confirm or 'No' to cancel)."
-            )
-        elif t_step == "RESOLVE":
-            if not amt:
-                prompt = f"\n\nNow, continuing with your transfer to **{bene}**: How much would you like to transfer?"
-            else:
-                prompt = f"\n\nNow, continuing with your transfer: Who would you like to transfer funds to?"
-        else:
-            prompt = f"\n\nWould you like to continue with your transfer to **{bene}**?"
-
-        return base_msg + prompt, "TRANSFER_MONEY", {"transfer_data": t_data}
-
-    elif active_wf == "OPEN_ACCOUNT":
-        acc_data = dict(state.get("account_data") or {})
-        step = acc_data.get("step", "NAME")
-        if step == "DOB":
-            prompt = "\n\nNow, continuing with your account application: What is your date of birth?"
-        elif step == "EMAIL":
-            prompt = "\n\nNow, continuing with your account application: What is your email address?"
-        else:
-            prompt = "\n\nNow, continuing with your account application: What is your full name?"
-        return base_msg + prompt, "OPEN_ACCOUNT", {"account_data": acc_data}
-
-    elif active_wf == "PAYMENT_ACTION":
-        bill_data = dict(state.get("bill_data") or {})
-        biller = bill_data.get("biller_name", "your bill")
-        prompt = f"\n\nNow, continuing with your bill payment for **{biller}**: Please provide the consumer number or confirm payment."
-        return base_msg + prompt, "PAYMENT_ACTION", {"bill_data": bill_data}
-
-    elif active_wf == "WEALTH_ADVISORY":
-        w_data = dict(state.get("wealth_data") or {})
-        amt = w_data.get("monthly_investment", 1000.0)
-        prompt = f"\n\nNow, continuing with your SIP investment planning of ₹{amt:,.2f}/month: Would you like to view our recommended funds or adjust the tenure?"
-        return base_msg + prompt, "WEALTH_ADVISORY", {"wealth_data": w_data}
-
-    elif active_wf == "POLICY_ACTION":
-        p_data = dict(state.get("policy_data") or {})
-        cat = p_data.get("category", "insurance")
-        prompt = f"\n\nNow, continuing with your {cat} policy exploration: Would you like more details or a comparison between specific plans?"
-        return base_msg + prompt, "POLICY_ACTION", {"policy_data": p_data}
-
-    return base_msg, "NONE", {}
+    return build_interruption_continuation_prompt(base_msg, active_wf, state)
 
 
 async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
@@ -782,8 +720,11 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         card_data = dict(state.get("card_data") or {})
         if slots.get("card_type"):
             card_data["card_type"] = slots["card_type"]
+        if slots.get("amount"):
+            card_data["online_limit"] = slots["amount"]
         return {
             "current_intent": "CARD_ACTION",
+            "current_sub_intent": sub_intent,
             "active_workflow": "CARD_ACTION",
             "card_data": card_data,
             "customer_memory": memory
@@ -798,6 +739,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
             loan_data["tenure_months"] = slots["tenure_months"]
         return {
             "current_intent": "LOAN_ACTION",
+            "current_sub_intent": sub_intent,
             "active_workflow": "LOAN_ACTION",
             "loan_data": loan_data,
             "customer_memory": memory
@@ -808,8 +750,11 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         pay_data = dict(state.get("payment_data") or {})
         if slots.get("biller_name"):
             pay_data["biller_name"] = slots["biller_name"]
+        if slots.get("amount"):
+            pay_data["amount"] = slots["amount"]
         return {
             "current_intent": "PAYMENT_ACTION",
+            "current_sub_intent": sub_intent,
             "active_workflow": "PAYMENT_ACTION",
             "payment_data": pay_data,
             "customer_memory": memory
@@ -916,34 +861,8 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         cust_first_name = (state.get("customer_name") or "").split(" ")[0].capitalize()
         name_str = cust_first_name if cust_first_name else "there"
 
-        # Contextual appreciation based on preceding action
-        if any(k in last_ai_content for k in ["Transaction ID", "TXN-", "latest transfer was", "latest transfer attempt", "Recent Transfers", "Debited From"]):
-            bene_mention = " to Rahul" if "Rahul" in last_ai_content else ""
-            appreciation_msg = f"You're very welcome, {name_str}! 😊 Glad I could help you check your transfer details{bene_mention}. Let me know if you need an official PDF statement, a balance check, or anything else!"
-        elif any(k in last_ai_content for k in ["Official Account Statement", "NovaBank Official Account Statement", "Download Official PDF Statement"]) or state.get("widget_type") == "STATEMENT_WIDGET":
-            appreciation_msg = f"You're very welcome, {name_str}! 📄 I hope the statement details and PDF are helpful. Feel free to ask if you need statements for other date ranges or any spending insights!"
-        elif any(k in last_ai_content for k in ["Transaction Diagnosis", "Root Cause:", "Beneficiary Cool-Off", "Recommended Next Step"]):
-            appreciation_msg = f"You're very welcome, {name_str}! I'm always here to help clarify transaction policies and safeguard your accounts. Let me know if you'd like help with anything else!"
-        elif any(k in last_ai_content for k in ["Transfer initiated!", "sent successfully", "Official Transaction Receipt"]) or (state.get("transfer_data") or {}).get("step") == "COMPLETED":
-            appreciation_msg = f"You're most welcome, {name_str}! 🎉 Glad that transfer went through smoothly. Feel free to ask if you need a receipt, statement, or anything else. Have a wonderful day! 😊"
-        elif any(k in last_ai_content for k in ["current balance for", "available balance", "is ₹"]):
-            appreciation_msg = f"You're very welcome, {name_str}! Always happy to help keep track of your account balance. Let me know if you need to make a transfer, pay a bill, or check statements!"
-        elif any(k in last_ai_content for k in ["account SB", "account CA", "KYC is complete", "Passbook", "successfully opened"]):
-            appreciation_msg = f"It was my absolute pleasure, {name_str}! 🌟 Congratulations once again on opening your NovaBank account. Let me know whenever you'd like to explore features, make a deposit, or add beneficiaries!"
-        elif any(k in last_ai_content for k in ["INSTANTLY FROZEN", "Card Security", "unfrozen", "card limits"]):
-            appreciation_msg = f"You're very welcome, {name_str}! Your card and account security is always our top priority. We're here 24/7 whenever you need us!"
-        elif any(k in last_ai_content for k in ["Monthly EMI", "EMI Simulator", "Personal Loan"]):
-            appreciation_msg = f"Happy to help with your loan calculations, {name_str}! Feel free to reach out when you're ready to proceed with an application or explore other options. 😊"
-        elif any(k in last_ai_content for k in ["Paid to", "bill payment", "Electricity Bill"]):
-            appreciation_msg = f"You're very welcome, {name_str}! Glad that payment is all sorted. Let me know if you have other bills or transfers to take care of."
-        elif any(k in last_ai_content for k in ["SIP", "Compounding", "Student Starter", "Nifty 50", "Asset Allocation"]):
-            appreciation_msg = f"You're very welcome, {name_str}! Starting your investment journey early is the best decision you can make. Let me know whenever you'd like to adjust your SIP or explore other funds! 🚀"
-        elif any(k in last_ai_content for k in ["Health Shield", "PMJJBY", "Insurance", "Policy Catalog", "Health & Medical"]):
-            appreciation_msg = f"Always glad to help secure your financial future, {name_str}! Reach out anytime you have questions about policies or coverage benefits. 🌟"
-        elif any(k in last_ai_content for k in ["Live Market Quote", "Financial & Stock Market"]):
-            appreciation_msg = f"You're very welcome, {name_str}! Happy to provide real-time market data. Let me know if you need quotes or insights on any other stocks!"
-        else:
-            appreciation_msg = f"You're very welcome, {name_str}! 😊 It's always my pleasure to assist you. Just let me know whenever you need anything else with NovaBank!"
+        # Contextual appreciation based on preceding action (Segregated in agents.supervisor.prompts)
+        appreciation_msg = build_gratitude_response(last_ai_content, state.get("customer_name") or "")
 
         full_resp, next_wf, extra_state = _build_interruption_continuation(appreciation_msg, active_wf, state)
         out = {
@@ -959,26 +878,23 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         out.update(extra_state)
         return out
 
-    # 13. Default Banking Assistant Menu
-    cust_display_name = state.get("customer_name", "").split(" ")[0] if state.get("customer_name") else "there"
-    default_msg = (
-        f"Hello {cust_display_name}! I am your AI Banking Assistant. I can assist you with:\n"
-        "• Transfers & Beneficiaries: Send money, UPI payments, balance checks\n"
-        "• Wealth & Investments: Systematic SIP planner, compounding calculators, live stock market search\n"
-        "• Insurance & Policies: Health shields, pure term life, PMJJBY, PMSBY, PPF & NPS\n"
-        "• Statements & Ledgers: Official PDF statements with running balances & decline diagnosis\n"
-        "• Cards Management: Instant freeze/unfreeze, report lost card, set limits\n"
-        "• Loans & Advisory: EMI calculators, loan eligibility, application submission\n"
-        "• Bill Payments: Pay electricity, broadband, mobile, and credit card bills\n"
-        "• Account Opening: Conversational savings and current account opening with video KYC\n"
-        "• Support & FAQs: Dispute investigation, interest rates, and customer support escalation"
-    )
+    # 13. Conversational / Intelligent Fallback Handler
+    is_greeting = any(clean_text == g for g in [
+        "hi", "hello", "hey", "good morning", "good evening", "good afternoon",
+        "namaste", "hola", "help", "menu", "start", "options"
+    ]) or sub_intent == "GREETING"
+
+    if is_greeting:
+        resp_msg = build_supervisor_default_menu(state.get("customer_name") or "")
+    else:
+        resp_msg = build_chatgpt_style_fallback_response(last_msg, state.get("customer_name") or "")
+
     return {
         "current_intent": "GENERAL_CONVERSATION",
-        "current_sub_intent": sub_intent,
+        "current_sub_intent": sub_intent or "OTHER",
         "active_workflow": "NONE",
-        "final_response": default_msg,
-        "messages": [AIMessage(content=default_msg)],
+        "final_response": resp_msg,
+        "messages": [AIMessage(content=resp_msg)],
         "customer_memory": memory,
         "widget_type": None,
         "widget_data": None

@@ -13,6 +13,10 @@ from apps.api.schemas.chat import (
     SessionDetailResponse
 )
 from agents.supervisor.graph import supervisor_graph_builder
+from agents.supervisor.prompts import (
+    build_chatgpt_style_fallback_response,
+    build_system_error_fallback_response,
+)
 from checkpoints.checkpointer import get_checkpointer
 from security.guardrails_engine import enterprise_guardrails
 from services.cache.cache_engine import cache_engine
@@ -157,9 +161,23 @@ async def _handle_chat_impl(request: ChatRequest):
         final_state = await app.ainvoke(input_payload, config=config)
     except Exception as exc:
         logger.error("LangGraph turn execution error", error=str(exc))
-        raise HTTPException(
-            status_code=500,
-            detail="An error occurred while orchestrating your request. Please try again."
+        fallback_msg = build_system_error_fallback_response()
+        safe_fallback = enterprise_guardrails.sanitize_output(fallback_msg)
+        async with AsyncSessionLocal() as session:
+            repo = BankingRepository(session)
+            await repo.save_chat_message(
+                thread_id=thread_id,
+                customer_id=customer_id,
+                role="assistant",
+                content=safe_fallback,
+                active_workflow="NONE"
+            )
+            await repo.update_session(thread_id=thread_id, customer_id=customer_id)
+            await session.commit()
+        return ChatResponse(
+            response=safe_fallback,
+            thread_id=thread_id,
+            active_workflow="NONE"
         )
 
     # 4. Check if paused at HITL interrupt or pending confirmation
@@ -176,7 +194,11 @@ async def _handle_chat_impl(request: ChatRequest):
             "Our security team has been alerted and is reviewing the request."
         )
     else:
-        bot_reply = final_state.get("final_response") or "I have processed your request."
+        raw_reply = final_state.get("final_response")
+        if not raw_reply or not str(raw_reply).strip():
+            bot_reply = build_chatgpt_style_fallback_response(request.message, customer_name)
+        else:
+            bot_reply = raw_reply
         # Transfer confirmation check
         if final_state.get("active_workflow") == "TRANSFER_MONEY" and final_state.get("transfer_data", {}).get("step") == "CONFIRM":
             requires_action = "CONFIRMATION_REQUIRED"

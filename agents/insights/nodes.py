@@ -8,6 +8,10 @@ from database.repositories.banking_repo import BankingRepository
 from gateway.tool_gateway.gateway import ToolGateway
 from gateway.tool_gateway.permissions import AgentRole
 from agents.state import BankingSessionState, InsightsWorkflowData
+from agents.insights.prompts import (
+    build_spending_breakdown_response,
+    build_subscriptions_response,
+)
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -17,7 +21,15 @@ tool_gateway = ToolGateway()
 async def execute_insights_node(state: BankingSessionState) -> Dict[str, Any]:
     """Evaluates customer financial insights, spending breakdowns, and subscription audits."""
     data: InsightsWorkflowData = dict(state.get("insights_data") or {})
-    action = data.get("action", "SPENDING")
+    sub_intent = (state.get("current_sub_intent") or "").upper()
+    if sub_intent == "SUBSCRIPTION_AUDIT":
+        action = "SUBSCRIPTIONS"
+    elif sub_intent == "CASHFLOW_PREDICTION":
+        action = "CASHFLOW"
+    elif sub_intent == "SPENDING_BREAKDOWN":
+        action = "SPENDING"
+    else:
+        action = data.get("action", "SPENDING")
     customer_id = state.get("customer_id", 1)
 
     async with AsyncSessionLocal() as session:
@@ -37,15 +49,7 @@ async def execute_insights_node(state: BankingSessionState) -> Dict[str, Any]:
                 return {"active_workflow": "NONE", "final_response": resp, "messages": [AIMessage(content=resp)]}
 
             info = result.data
-            lines = [
-                f"📊 **Monthly Spending Breakdown (Last {info['period_days']} Days)**",
-                f"**Total Outflow:** ₹{info['total_spent']:,.2f}\n"
-            ]
-            for item in info["breakdown"]:
-                lines.append(f"• **{item['category']}**: ₹{item['amount']:,.2f} ({item['percentage']}%)")
-
-            lines.append(f"\n💡 *Top expense driver:* **{info['top_category']}**.")
-            resp = "\n".join(lines)
+            resp = build_spending_breakdown_response(info)
 
             return {
                 "active_workflow": "NONE",
@@ -73,15 +77,7 @@ async def execute_insights_node(state: BankingSessionState) -> Dict[str, Any]:
                 return {"active_workflow": "NONE", "final_response": resp, "messages": [AIMessage(content=resp)]}
 
             info = result.data
-            lines = [
-                f"🔄 **Active Recurring Subscriptions Detected ({info['count']})**",
-                f"**Total Monthly Commitment:** ₹{info['total_monthly_commitment']:,.2f}",
-                f"**Projected Annual Cost:** ₹{info['annual_projected_cost']:,.2f}\n"
-            ]
-            for sub in info["subscriptions"]:
-                lines.append(f"• **{sub['name']}**: ₹{sub['amount']:,.2f}/mo (Last paid: {sub['last_paid']})")
-
-            resp = "\n".join(lines)
+            resp = build_subscriptions_response(info)
             return {
                 "active_workflow": "NONE",
                 "insights_data": {},

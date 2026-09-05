@@ -11,6 +11,13 @@ from database.repositories.banking_repo import BankingRepository
 from database.models.banking import Customer, Account
 from sqlalchemy import select
 from agents.account.validators import validate_email, validate_date_of_birth, validate_full_name
+from agents.account.prompts import (
+    prompt_full_name,
+    prompt_date_of_birth,
+    prompt_email,
+    prompt_business_name,
+    prompt_gstin,
+)
 import structlog
 
 import re
@@ -214,7 +221,7 @@ async def collect_profile_node(state: BankingSessionState) -> Dict[str, Any]:
     if not data.get("full_name"):
         data["step"] = "NAME"
         data["account_type"] = data.get("account_type", "SAVINGS")
-        resp = "Absolutely! I can help you open a new bank account. May I have your full name?"
+        resp = prompt_full_name()
         return {
             "account_data": data,
             "final_response": resp,
@@ -223,7 +230,7 @@ async def collect_profile_node(state: BankingSessionState) -> Dict[str, Any]:
 
     if not data.get("date_of_birth"):
         data["step"] = "DOB"
-        resp = f"Thanks, {data['full_name']}. What is your date of birth?"
+        resp = prompt_date_of_birth(data["full_name"])
         return {
             "account_data": data,
             "final_response": resp,
@@ -232,7 +239,7 @@ async def collect_profile_node(state: BankingSessionState) -> Dict[str, Any]:
 
     if not data.get("email"):
         data["step"] = "EMAIL"
-        resp = "What email address would you like to use for your account?"
+        resp = prompt_email()
         return {
             "account_data": data,
             "final_response": resp,
@@ -243,7 +250,7 @@ async def collect_profile_node(state: BankingSessionState) -> Dict[str, Any]:
     if data.get("account_type") == "CURRENT":
         if not data.get("company_name"):
             data["step"] = "BUSINESS_INFO"
-            resp = "Thank you! To open a **NovaBank Current Account**, please share your registered **Company or Business Name** (e.g. Acme Tech Solutions Private Limited)."
+            resp = prompt_business_name()
             return {
                 "account_data": data,
                 "final_response": resp,
@@ -252,7 +259,7 @@ async def collect_profile_node(state: BankingSessionState) -> Dict[str, Any]:
 
         if not data.get("gst_verified"):
             data["step"] = "GST_VERIFY"
-            resp = f"Please provide your 15-character **GSTIN** (Goods & Services Tax Number) or upload your Form GST REG-06 registration certificate for **{data.get('company_name')}**."
+            resp = prompt_gstin(data.get("company_name", ""))
             return {
                 "account_data": data,
                 "final_response": resp,

@@ -17,6 +17,7 @@ from services.fraud.engine import fraud_engine, FraudAssessment
 from policies.transfer import transfer_policy_engine, PolicyDecision
 from security.pii import mask_account_number
 from security.validators import validate_account_number, validate_ifsc_code
+from agents.transfer.prompts import build_transfer_entity_extraction_prompt
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -31,31 +32,7 @@ async def extract_transfer_entities_llm(
     if not last_msg or len(last_msg.strip()) < 2:
         return {}
 
-    prompt = f"""You are a conversational entity extractor for a banking fund transfer system.
-Analyze the user's message and extract transfer parameters based on the current dialog state.
-
-Current transfer state:
-- Beneficiary Name: {current_data.get('beneficiary_name') or 'Not provided'}
-- Beneficiary Account: {current_data.get('beneficiary_account') or 'Not provided'}
-- IFSC Code: {current_data.get('ifsc_code') or 'Not provided'}
-- Amount: {current_data.get('amount') or 'Not provided'}
-- Previous assistant question: "{previous_question}"
-
-User message: "{last_msg}"
-
-Rules:
-1. If the previous question asked for a beneficiary name, and user provided a name (e.g. "Rahul", "Priya", "John Smith"), extract as "beneficiary_name".
-2. If the user provided an amount (e.g. "500", "5k", "₹10,000", "two thousand"), parse and return float as "amount".
-3. If the user provided a bank account number (9 to 18 digits) or phone/UPI number (10 digits), extract as "account_number".
-4. If the user provided an IFSC code (11 characters starting with 4 letters), extract as "ifsc_code".
-
-Respond strictly with valid JSON:
-{{
-  "beneficiary_name": null,
-  "amount": null,
-  "account_number": null,
-  "ifsc_code": null
-}}"""
+    prompt = build_transfer_entity_extraction_prompt(current_data, previous_question, last_msg)
 
     try:
         res = await llm_gateway.invoke_chat([

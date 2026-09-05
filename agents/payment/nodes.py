@@ -11,6 +11,10 @@ from database.repositories.banking_repo import BankingRepository
 from gateway.tool_gateway.gateway import tool_gateway
 from gateway.tool_gateway.permissions import AgentRole
 from security.pii import mask_account_number
+from agents.payment.prompts import (
+    build_upi_verified_response,
+    build_bill_details_prompt,
+)
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -28,12 +32,13 @@ async def payment_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
             break
 
     text_lower = last_msg.lower()
+    sub_intent = (state.get("current_sub_intent") or "").upper()
 
     async with AsyncSessionLocal() as session:
         repo = BankingRepository(session)
 
         # 1. UPI Payment Handler
-        if "@" in last_msg and any(k in text_lower for k in ["upi", "pay", "send"]):
+        if sub_intent == "UPI_PAYMENT" or ("@" in last_msg and any(k in text_lower for k in ["upi", "pay", "send"])):
             upi_match = re.search(r"([\w\.\-]+@[\w\-]+)", last_msg)
             if upi_match:
                 upi_id = upi_match.group(1)
@@ -45,10 +50,7 @@ async def payment_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
                     parameters={"upi_id": upi_id}
                 )
                 if res.success:
-                    resp = (
-                        f"UPI handle {upi_id} verified ({res.data['resolved_name']}).\n"
-                        f"Instant UPI payment rail is ready. Please confirm the amount you would like to transfer."
-                    )
+                    resp = build_upi_verified_response(upi_id, res.data.get("resolved_name", "Registered User"))
                 else:
                     resp = res.error
                 return {
@@ -91,9 +93,11 @@ async def payment_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
         # 3. New Bill Payment Request - Fetch details
         biller_name = data.get("biller_name")
         if not biller_name:
-            if "airtel" in text_lower or "broadband" in text_lower:
+            if sub_intent == "ELECTRICITY_BILL" or "electric" in text_lower or "power" in text_lower:
+                biller_name = "Tata Power"
+            elif sub_intent == "BROADBAND_BILL" or "airtel" in text_lower or "broadband" in text_lower:
                 biller_name = "Airtel Broadband"
-            elif "credit" in text_lower or "card bill" in text_lower:
+            elif sub_intent == "CREDIT_CARD_BILL" or "credit" in text_lower or "card bill" in text_lower:
                 biller_name = "HDFC Credit Card Bill"
             else:
                 biller_name = "Tata Power"

@@ -9,6 +9,11 @@ from database.connection import AsyncSessionLocal
 from database.repositories.banking_repo import BankingRepository
 from gateway.tool_gateway.gateway import tool_gateway
 from gateway.tool_gateway.permissions import AgentRole
+from agents.loan.prompts import (
+    build_loan_application_response,
+    build_loan_eligibility_response,
+    build_emi_estimate_response,
+)
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -26,6 +31,7 @@ async def loan_orchestrator_node(state: BankingSessionState) -> Dict[str, Any]:
             break
 
     text_lower = last_msg.lower()
+    sub_intent = (state.get("current_sub_intent") or "").upper()
 
     # Extract slots from message
     amount = loan_data.get("amount")
@@ -59,7 +65,7 @@ async def loan_orchestrator_node(state: BankingSessionState) -> Dict[str, Any]:
         repo = BankingRepository(session)
 
         # Case 1: Loan Application Submission
-        if any(k in text_lower for k in ["apply", "submit application", "proceed with loan"]):
+        if sub_intent == "APPLY_LOAN" or any(k in text_lower for k in ["apply", "submit application", "proceed with loan"]):
             req_amount = amount or 300000.0
             req_tenure = tenure_months or 36
             res = await tool_gateway.execute_tool(
@@ -75,7 +81,8 @@ async def loan_orchestrator_node(state: BankingSessionState) -> Dict[str, Any]:
                     "annual_rate_pct": 8.75 if loan_type == "HOME" else 10.5
                 }
             )
-            resp = res.data.get("message", "Loan application submitted.")
+            raw_msg = res.data.get("message", "Loan application submitted.") if res.success else res.error
+            resp = build_loan_application_response(loan_type, req_amount, req_tenure, raw_msg)
             return {
                 "active_workflow": "NONE",
                 "loan_data": {},
@@ -84,7 +91,7 @@ async def loan_orchestrator_node(state: BankingSessionState) -> Dict[str, Any]:
             }
 
         # Case 2: Loan Eligibility Evaluation
-        if any(k in text_lower for k in ["eligible", "eligibility"]):
+        if sub_intent == "LOAN_ELIGIBILITY" or any(k in text_lower for k in ["eligible", "eligibility"]):
             req_amount = amount or 500000.0
             req_tenure = tenure_months or 36
             res = await tool_gateway.execute_tool(
@@ -100,7 +107,8 @@ async def loan_orchestrator_node(state: BankingSessionState) -> Dict[str, Any]:
                     "annual_rate_pct": 10.5
                 }
             )
-            resp = res.data.get("message")
+            raw_msg = res.data.get("message", "Loan eligibility verified.") if res.success else res.error
+            resp = build_loan_eligibility_response(loan_type, req_amount, raw_msg)
             return {
                 "active_workflow": "NONE",
                 "loan_data": {},
@@ -126,15 +134,14 @@ async def loan_orchestrator_node(state: BankingSessionState) -> Dict[str, Any]:
         )
 
         emi_data = res.data
-        resp = (
-            f"Here is your {loan_type.capitalize()} Loan estimate:\n\n"
-            f"• Loan Amount: ₹{calc_principal:,.2f}\n"
-            f"• Interest Rate: {interest_rate:.2f}% p.a.\n"
-            f"• Tenure: {calc_tenure} months ({calc_tenure // 12} years)\n"
-            f"• Estimated Monthly EMI: ₹{emi_data['monthly_emi']:,.2f}\n"
-            f"• Total Interest: ₹{emi_data['total_interest']:,.2f}\n"
-            f"• Total Payable: ₹{emi_data['total_payable']:,.2f}\n\n"
-            f"Would you like to check your eligibility or submit an application today?"
+        resp = build_emi_estimate_response(
+            loan_type=loan_type,
+            principal=calc_principal,
+            interest_rate=interest_rate,
+            tenure_months=calc_tenure,
+            monthly_emi=emi_data["monthly_emi"],
+            total_interest=emi_data["total_interest"],
+            total_payable=emi_data["total_payable"]
         )
 
     return {

@@ -8,6 +8,7 @@ from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 from langchain_core.messages import SystemMessage, HumanMessage
 from gateway.llm.client import llm_gateway
+from gateway.llm.prompts import build_banking_router_prompt
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -105,6 +106,7 @@ class BankingSubIntent(str, Enum):
 
 class ExtractedEntities(BaseModel):
     amount: Optional[float] = None
+    target_amount: Optional[float] = None
     currency: Optional[str] = "INR"
     beneficiary_name: Optional[str] = None
     beneficiary_account: Optional[str] = None
@@ -353,263 +355,11 @@ async def route_banking_request(
             cleaned_message=raw_text
         )
 
-    # 2b. Deterministic Gratitude & Appreciation fast paths ("thank you", "thanks", "thanku", "thx")
-    gratitude_tokens = [
-        "thank you", "thanks", "thanku", "thx", "ty", "thank u", "many thanks",
-        "great thanks", "thanks a lot", "thank you so much", "thank u so much",
-        "thanks bot", "thnx", "appreciate it", "thankyou", "thanks a million",
-        "thanks!", "thank you!", "thanku!", "thx!"
-    ]
-    if (
-        clean_text in gratitude_tokens
-        or clean_text.rstrip("!.,") in gratitude_tokens
-        or any(clean_text.startswith(p) for p in ["thank you", "thanks", "thanku", "appreciate it", "thank u"])
-    ):
-        return BankingRoutingDecision(
-            intent=BankingIntent.GENERAL_CONVERSATION,
-            sub_intent=BankingSubIntent.THANK_YOU,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning="Customer expressed gratitude or appreciation for banking assistance.",
-            cleaned_message=raw_text
-        )
-
-    # 3. Dynamic Temporal Injection (Current Date, Time & Day)
+    # 3. Dynamic Temporal Context Injection (Current Date, Time & Day)
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
     current_time_str = now_ist.strftime("%A, %d-%b-%Y %I:%M %p IST")
 
-    # Fast temporal query check
-    if any(q in clean_text for q in ["what is the time", "what time is it", "what date is today", "what is today's date", "todays date", "current time", "what day is today"]):
-        return BankingRoutingDecision(
-            intent=BankingIntent.TEMPORAL_QUERY,
-            sub_intent=BankingSubIntent.CURRENT_TIME_DATE,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning=f"Inquiry regarding current time/date: {current_time_str}",
-            cleaned_message=raw_text
-        )
-
-    # Fast multi-account / list accounts inquiry check (e.g. "how many account i ahve", "my accounts")
-    acc_list_triggers = [
-        "how many account", "how many accounts", "how many acc", "how many accs",
-        "how many account i have", "how many accounts i have", "how many account i ahve", "how many accounts do i have",
-        "how many account do i have", "how many accounts do i got", "how many acc i have",
-        "list my account", "list my accounts", "list accounts", "list account",
-        "show my accounts", "show my account", "show accounts", "show account",
-        "what accounts do i have", "what account do i have", "what are my accounts", "which accounts do i have",
-        "my accounts", "all my accounts", "all accounts", "my account list",
-        "account portfolio", "portfolio of accounts", "account summary", "view my accounts", "view accounts"
-    ]
-    is_acc_keyword = any(w in clean_text for w in ["account", "accounts", "acocunt", "acocunts", "acc", "accs"])
-    is_count_or_list_keyword = any(w in clean_text for w in ["how many", "list", "show", "what", "which", "tell", "view", "all my", "all"])
-    if (
-        any(q in clean_text for q in acc_list_triggers)
-        or clean_text in ["accounts", "my accounts", "my accs", "acc list", "account list"]
-        or (is_acc_keyword and is_count_or_list_keyword and not any(k in clean_text for k in ["open", "create", "new", "apply", "register", "transfer", "send"]))
-    ):
-        return BankingRoutingDecision(
-            intent=BankingIntent.BALANCE_CHECK,
-            sub_intent=BankingSubIntent.LIST_ACCOUNTS,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning="Direct user inquiry to list registered bank accounts and total portfolio balance.",
-            cleaned_message=raw_text
-        )
-
-    # Fast balance query check (Interruption-safe before contextual steps)
-    bal_triggers = [
-        "what is my balance", "what's my balance", "check balance", "current balance",
-        "account balance", "how much money do i have", "how much is in my account",
-        "show balance", "balance check", "view balance", "my balance", "check my balance"
-    ]
-    if any(q in clean_text for q in bal_triggers) or clean_text in ["balance", "bal", "my bal"]:
-        return BankingRoutingDecision(
-            intent=BankingIntent.BALANCE_CHECK,
-            sub_intent=BankingSubIntent.OTHER,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning="Direct user inquiry for account balance.",
-            cleaned_message=raw_text
-        )
-
-    # Fast Web / Financial Search check
-    web_search_triggers = [
-        "search web for", "search web", "web search", "google search", "search internet",
-        "latest rbi repo rate", "rbi repo rate", "current repo rate", "repo rate",
-        "dicgc insurance limit", "section 80ccd limit", "upi daily limit"
-    ]
-    if any(q in clean_text for q in web_search_triggers) or (clean_text.startswith("search ") and not any(w in clean_text for w in ["statement", "transaction", "faq", "ticket"])):
-        return BankingRoutingDecision(
-            intent=BankingIntent.KNOWLEDGE_FAQ,
-            sub_intent=BankingSubIntent.WEB_SEARCH,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning="User inquiry requesting live web or regulatory financial search.",
-            cleaned_message=raw_text
-        )
-
-
-    # Fast KYC status inquiry check
-    kyc_triggers = [
-        "is my kyc done", "is kyc done", "my kyc status", "kyc status", "check kyc",
-        "check my kyc", "is my account verified", "am i kyc verified", "kyc verification status"
-    ]
-    if any(q in clean_text for q in kyc_triggers):
-        return BankingRoutingDecision(
-            intent=BankingIntent.OPEN_ACCOUNT,
-            sub_intent=BankingSubIntent.KYC_STATUS,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning="User inquiry for account KYC and verification status.",
-            cleaned_message=raw_text
-        )
-
-    # Fast Account Statement inquiry check
-    stmt_triggers = [
-        "statement", "sattemnet", "statemnt", "statment", "account statement", "pdf statement",
-        "download statement", "send statement", "get statement", "email statement", "bank statement"
-    ]
-    if any(q in clean_text for q in stmt_triggers):
-        entities = _extract_entities_fast(raw_text)
-        return BankingRoutingDecision(
-            intent=BankingIntent.STATEMENT_REQUEST,
-            sub_intent=BankingSubIntent.DOWNLOAD_STATEMENT,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning=f"User requested bank account statement (Period: {entities.period_type or 'LAST_6_MONTHS'}).",
-            entities=entities,
-            cleaned_message=raw_text
-        )
-
-    # Fast Transaction Inquiry, Diagnosis & Transfer Tracking check
-    decline_triggers = [
-        "why was my last transaction declined", "why is my last transaction declined",
-        "why was my transaction declined", "why was it declined", "why did transaction fail",
-        "why my transfer failed", "why was it rejected", "why did it get declined",
-        "reason for decline", "reason for failure", "explain decline"
-    ]
-    explain_triggers = [
-        "explain my last transaction", "explain my transaction", "explain transaction",
-        "explain my spending", "why did my balance decrease", "why balance decreased"
-    ]
-    is_dispute_keyword = any(k in clean_text for k in ["card", "upi", "merchant", "pos", "atm", "swipe", "unauthorized", "fraud", "stolen", "store"])
-    if not is_dispute_keyword and (any(q in clean_text for q in decline_triggers) or (("why" in clean_text or "reason" in clean_text) and any(w in clean_text for w in ["decline", "declined", "failed", "reject", "rejected"]))):
-        entities = _extract_entities_fast(raw_text)
-        return BankingRoutingDecision(
-            intent=BankingIntent.TRANSACTION_INQUIRY,
-            sub_intent=BankingSubIntent.EXPLAIN_DECLINE,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning="User inquiry diagnosing transaction decline root cause and next steps.",
-            entities=entities,
-            cleaned_message=raw_text
-        )
-    if any(q in clean_text for q in explain_triggers):
-        entities = _extract_entities_fast(raw_text)
-        return BankingRoutingDecision(
-            intent=BankingIntent.TRANSACTION_INQUIRY,
-            sub_intent=BankingSubIntent.EXPLAIN_LAST_TXN,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning="User inquiry requesting explanation of latest transaction or spending impact.",
-            entities=entities,
-            cleaned_message=raw_text
-        )
-
-    txn_triggers = [
-        "latest amount i transferred", "latest amount transferred", "last transfer",
-        "latest transfer", "what was my last transfer", "what was the latest amount",
-        "last amount transferred", "last transaction", "latest transaction",
-        "recent transfers", "transfer history", "transaction history", "track transfer",
-        "transfer status", "check my transfers", "where is my transfer", "did my transfer go through"
-    ]
-    is_txn_inquiry = any(q in clean_text for q in txn_triggers) or (
-        ("transfer" in clean_text or "amount" in clean_text or "trasnfer" in clean_text) and any(w in clean_text for w in ["latest", "last", "recent", "status", "track", "history", "laets"])
-    )
-    if is_txn_inquiry or (re.search(r"\b(TXN-[A-Za-z0-9]+)\b", raw_text, re.IGNORECASE) and not any(w in clean_text for w in ["unauthorized", "stolen", "fraud", "dispute"])):
-        sub = BankingSubIntent.LATEST_TRANSFER if any(w in clean_text for w in ["latest", "last", "laets"]) else (
-            BankingSubIntent.TRACK_TRANSACTION if "TXN-" in raw_text.upper() else BankingSubIntent.TRANSFER_HISTORY
-        )
-        entities = _extract_entities_fast(raw_text)
-        return BankingRoutingDecision(
-            intent=BankingIntent.TRANSACTION_INQUIRY,
-            sub_intent=sub,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning="User inquiry for transfer tracking, latest transfer, or transaction history.",
-            entities=entities,
-            cleaned_message=raw_text
-        )
-
-    # Fast Wealth Advisory, SIP Planning & Stock Market check
-    wealth_triggers = [
-        "sip", "sidp", "mutual fund", "mutual funds", "best sip", "sip plan", "start sip",
-        "invest", "investment", "wealth plan", "grow money", "compounding", "portfolio"
-    ]
-    stock_triggers = [
-        "best stock", "best stocks", "stocks to buy", "share market", "stock market",
-        "stock price", "share price", "live price", "quote for", "market price", "buy stock"
-    ]
-    is_student_persona = any(s in clean_text for s in ["college student", "coioolsge", "sstudnet", "college", "student"])
-    is_wealth_query = (
-        any(q in clean_text for q in wealth_triggers)
-        or (is_student_persona and any(w in clean_text for w in ["monthly", "income", "money", "save", "invest", "amount", "amoiut"]))
-        or any(q in clean_text for q in stock_triggers)
-    )
-    if is_wealth_query:
-        entities = _extract_entities_fast(raw_text)
-        if any(q in clean_text for q in stock_triggers) or (entities.stock_symbol and not any(w in clean_text for w in ["sip", "mutual fund"])):
-            sub = BankingSubIntent.STOCK_MARKET_SEARCH
-            reasoning = "User requested stock market research or live quote analysis."
-        elif any(w in clean_text for w in ["recommend", "portfolio", "allocation"]):
-            sub = BankingSubIntent.PORTFOLIO_RECOMMENDATION
-            reasoning = "User requested portfolio allocation strategy."
-        else:
-            sub = BankingSubIntent.SIP_PLANNING
-            reasoning = "User requested SIP investment planning and compounding advisory."
-
-        return BankingRoutingDecision(
-            intent=BankingIntent.WEALTH_ADVISORY,
-            sub_intent=sub,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning=reasoning,
-            entities=entities,
-            cleaned_message=raw_text
-        )
-
-    # Fast Policy & Insurance Inquiry check
-    policy_triggers = [
-        "health insurance", "life insurance", "mediclaim", "pmjjby", "pmsby", "ppf", "nps", "apy",
-        "sukanya", "general policy", "banking policy", "insurance policy", "best policy", "tell policy",
-        "show policies", "policy", "policies", "poilcuy", "poclice", "hralth", "insurance"
-    ]
-    is_policy_query = (
-        any(q in clean_text for q in policy_triggers)
-        and not any(w in clean_text for w in ["transfer policy", "card policy", "password policy", "security policy", "policy_check"])
-    )
-    if is_policy_query:
-        entities = _extract_entities_fast(raw_text)
-        cat = entities.policy_category or "ALL"
-        if cat == "HEALTH":
-            sub = BankingSubIntent.HEALTH_INSURANCE
-        elif cat == "LIFE":
-            sub = BankingSubIntent.LIFE_INSURANCE
-        elif cat == "GOVT_SCHEME":
-            sub = BankingSubIntent.GOVERNMENT_SCHEME
-        else:
-            sub = BankingSubIntent.BANKING_POLICY
-
-        return BankingRoutingDecision(
-            intent=BankingIntent.POLICY_INQUIRY,
-            sub_intent=sub,
-            confidence=1.0,
-            negation_detected=False,
-            reasoning=f"User inquiry for {cat} insurance or banking policy catalog.",
-            entities=entities,
-            cleaned_message=raw_text
-        )
 
     # 4. Contextual Step Fulfillment (e.g. User answering a prompt during onboarding or transfer)
     active_wf = context.get("active_workflow", "NONE")
@@ -666,64 +416,8 @@ async def route_banking_request(
             cleaned_message=raw_text
         )
 
-    # 5. LLM Structured Routing Prompt
-    system_prompt = f"""You are NovaBank's enterprise banking intent classification and entity router.
-Current Temporal Context: {current_time_str}
-Active Conversation Workflow: {active_wf}
-
-CRITICAL RULES:
-1. TYPO & SLANG RESILIENCE:
-   The user may make spelling errors or use abbreviations (e.g. 'trnasfer', 'balence', 'freze', 'persoanl lon', 'wht is my bal', '5k').
-   Understand the intent by meaning, not rigid string matching.
-
-2. NEGATION DETECTION:
-   If the user states they DO NOT want to perform an action (e.g., 'I do not want to transfer money', 'Don't freeze my card', 'Cancel payment'):
-   Set negation_detected: true. DO NOT route to mutating intent. Set intent to GENERAL_CONVERSATION.
-
-3. DISPUTE & SUPPORT SUB-INTENT DISCRIMINATION:
-   Differentiate between:
-   - CARD_PAYMENT_DECLINED: card declined, swipe failed, POS declined.
-   - UPI_PAYMENT_FAILED: UPI failed, GPay/PhonePe error.
-   - TRANSFER_FAILED: NEFT/RTGS/IMPS wire transfer bounced or rejected.
-   - ATM_WITHDRAWAL_FAILED: ATM didn't dispense cash.
-   - UNAUTHORIZED_TRANSACTION: fraud, suspicious debit, stolen money.
-   - CREATE_TICKET: user wants to talk to a human agent, speak with support, open/raise a ticket, or file a complaint.
-
-4. CONFIDENCE THRESHOLDING:
-   If the query is ambiguous between multiple banking actions, set requires_clarification: true and provide clarification_prompt.
-
-5. TRANSFER TRACKING & TRANSACTION INQUIRY:
-   Queries asking about past transfers, latest transferred amount, transaction history, or tracking a transfer (e.g. 'what was my last transfer', 'latest amount transferred', 'status of transfer') -> TRANSACTION_INQUIRY.
-
-6. MULTI-ACCOUNT & BALANCE QUERIES:
-   Queries asking about how many accounts the user has, listing accounts, or portfolio summary -> BALANCE_CHECK with sub_intent LIST_ACCOUNTS.
-   Queries asking for live web search or external banking/economic/RBI questions -> KNOWLEDGE_FAQ with sub_intent WEB_SEARCH.
-
-Allowed Intents:
-TRANSFER_MONEY, OPEN_ACCOUNT, BALANCE_CHECK, TRANSACTION_INQUIRY, STATEMENT_REQUEST, CARD_ACTION, LOAN_ACTION, PAYMENT_ACTION,
-SPENDING_INSIGHTS, WEALTH_ADVISORY, POLICY_INQUIRY, KNOWLEDGE_FAQ, SUPPORT_DISPUTE, TEMPORAL_QUERY, CONFIRM_YES, CONFIRM_NO, GENERAL_CONVERSATION.
-
-
-Respond ONLY with a JSON object matching this schema:
-{{
-  "intent": "<INTENT_NAME>",
-  "sub_intent": "<SUB_INTENT_NAME>",
-  "confidence": 0.0 to 1.0,
-  "negation_detected": true/false,
-  "reasoning": "<brief explanation>",
-  "entities": {{
-    "amount": null or float,
-    "currency": "INR",
-    "beneficiary_name": null or str,
-    "account_type": null or "SAVINGS" or "CURRENT",
-    "card_type": null or "DEBIT" or "CREDIT",
-    "biller_name": null or str,
-    "tenure_months": null or int,
-    "transaction_ref": null or str
-  }},
-  "requires_clarification": false,
-  "clarification_prompt": null
-}}"""
+    # 5. LLM Structured Routing Prompt (Segregated in gateway.llm.prompts)
+    system_prompt = build_banking_router_prompt(current_time_str, active_wf)
 
     messages = [
         SystemMessage(content=system_prompt),
@@ -732,7 +426,12 @@ Respond ONLY with a JSON object matching this schema:
 
     try:
         response = await llm_gateway.invoke_chat(messages, model_tier="routing")
-        data = json.loads(response.content.strip())
+        raw_content = response.content.strip()
+        if "```json" in raw_content:
+            raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+        elif "```" in raw_content:
+            raw_content = raw_content.split("```")[1].split("```")[0].strip()
+        data = json.loads(raw_content)
 
         intent_raw = data.get("intent")
         intent_enum = BankingIntent(intent_raw) if intent_raw in BankingIntent._value2member_map_ else BankingIntent.GENERAL_CONVERSATION
@@ -815,6 +514,9 @@ Respond ONLY with a JSON object matching this schema:
         elif any(k in clean_text for k in ["freeze", "freze"]):
             fallback_intent = BankingIntent.CARD_ACTION
             fallback_sub = BankingSubIntent.FREEZE_CARD
+        elif any(k in clean_text for k in ["invest", "invetsmnet", "sip", "mutual fund", "wealth", "1 cr", "crore", "savings of"]):
+            fallback_intent = BankingIntent.WEALTH_ADVISORY
+            fallback_sub = BankingSubIntent.SIP_PLANNING
 
         return BankingRoutingDecision(
             intent=fallback_intent,

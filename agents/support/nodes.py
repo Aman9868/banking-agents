@@ -10,16 +10,15 @@ from database.repositories.banking_repo import BankingRepository
 from gateway.tool_gateway.gateway import tool_gateway
 from gateway.tool_gateway.permissions import AgentRole
 from security.pii import mask_account_number
+from agents.support.prompts import (
+    REASON_TRANSLATIONS,
+    build_fraud_ticket_response,
+    build_kb_guidelines_response,
+    build_transaction_dispute_response,
+)
 import structlog
 
 logger = structlog.get_logger(__name__)
-
-REASON_TRANSLATIONS = {
-    "BENEFICIARY_SECURITY_VERIFICATION_INCOMPLETE": "the beneficiary security verification was not completed",
-    "DAILY_TRANSFER_LIMIT_EXCEEDED": "your daily transfer limit was exceeded",
-    "SUSPICIOUS_VELOCITY_FLAG": "our fraud monitoring system flagged elevated velocity on the account",
-    "INSUFFICIENT_FUNDS": "the account balance was insufficient at the time of execution",
-}
 
 
 async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any]:
@@ -30,7 +29,8 @@ async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
     3. Escalation & support ticket creation
     """
     customer_id = state.get("customer_id", 1)
-    sub_intent = state.get("current_sub_intent") or state.get("support_data", {}).get("sub_intent")
+    raw_sub = state.get("current_sub_intent") or state.get("support_data", {}).get("sub_intent")
+    sub_intent = (raw_sub or "").upper()
     last_msg = ""
     for msg in reversed(state.get("messages", [])):
         if isinstance(msg, HumanMessage):
@@ -63,13 +63,7 @@ async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
                     ticket_id = "TKT-SEC-01"
             except Exception:
                 ticket_id = "TKT-SEC-01"
-            resp = (
-                f"🚨 **High-Priority Fraud Report Logged** (Ref: `{ticket_id}`)\n\n"
-                "We take unauthorized charges very seriously. I have escalated this directly to NovaBank's Fraud Investigation Team.\n\n"
-                "**Immediate Safety Recommendation:**\n"
-                "• Would you like me to **freeze your card immediately** to prevent any further unauthorized activity?\n"
-                "• Simply say *'Freeze my card'* or click the Cards menu to lock it instantly."
-            )
+            resp = build_fraud_ticket_response(ticket_id)
             return {
                 "active_workflow": "NONE",
                 "final_response": resp,
@@ -77,7 +71,7 @@ async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
             }
 
         # 1. Human Escalation / Create Support Ticket
-        if any(k in text_lower for k in ["human", "agent", "escalate", "file a complaint", "open ticket", "raise ticket"]):
+        if sub_intent in ["CREATE_TICKET", "ESCALATE_HUMAN", "FILE_COMPLAINT"] or any(k in text_lower for k in ["human", "agent", "escalate", "file a complaint", "open ticket", "raise ticket"]):
             ticket_res = await tool_gateway.execute_tool(
                 agent_role=AgentRole.SUPPORT_AGENT.value,
                 tool_name="create_support_ticket",
@@ -98,7 +92,7 @@ async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
             }
 
         # 2. General Knowledge / FAQ RAG Search
-        if any(k in text_lower for k in ["interest rate", "fixed deposit", "fees", "charges", "policy", "what is the limit", "savings rate"]):
+        if sub_intent in ["FAQ", "INTEREST_RATE", "POLICY"] or any(k in text_lower for k in ["interest rate", "fixed deposit", "fees", "charges", "policy", "what is the limit", "savings rate"]):
             rag_res = await tool_gateway.execute_tool(
                 agent_role=AgentRole.SUPPORT_AGENT.value,
                 tool_name="search_knowledge_base",
@@ -107,16 +101,14 @@ async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
                 parameters={"query": last_msg, "limit": 2}
             )
             if rag_res.success and rag_res.data.get("results"):
-                articles = rag_res.data["results"]
-                summary = "\n\n".join([f"**{a['title']}**:\n{a['content']}" for a in articles])
-                resp = f"According to our official banking guidelines:\n\n{summary}"
+                resp = build_kb_guidelines_response(rag_res.data["results"])
                 return {
                     "active_workflow": "NONE",
                     "final_response": resp,
                     "messages": [AIMessage(content=resp)]
                 }
 
-        # 3. Transaction Dispute Investigation
+        # 3. Transaction Dispute Investigation (CARD_PAYMENT_DECLINED, UPI_PAYMENT_FAILED, TRANSFER_FAILED, ATM_WITHDRAWAL_FAILED, FEE_DISPUTE, etc.)
         tx_match = re.search(r"\b(TXN-[A-Za-z0-9]+)\b", last_msg, re.IGNORECASE)
         target_tx = None
 
@@ -158,18 +150,12 @@ async def support_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
         tx_ref = target_tx.get("transaction_ref")
         status = target_tx.get("status")
         failure_code = target_tx.get("failure_reason") or "SYSTEM_POLICY_DENIAL"
-        friendly_reason = REASON_TRANSLATIONS.get(failure_code, str(failure_code).replace("_", " ").lower())
-
-        if status in ["DECLINED", "FAILED"]:
-            resp = (
-                f"I found transaction {tx_ref}.\n"
-                f"It was declined because {friendly_reason}."
-            )
-        else:
-            resp = (
-                f"Transaction {tx_ref} is currently {status.lower()} "
-                f"for the amount of ₹{target_tx.get('amount', 0.0):,.2f}."
-            )
+        resp = build_transaction_dispute_response(
+            tx_ref=tx_ref,
+            status=status,
+            failure_code=failure_code,
+            amount=target_tx.get("amount", 0.0)
+        )
 
         return {
             "active_workflow": "NONE",

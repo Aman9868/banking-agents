@@ -36,15 +36,15 @@ class LLMGateway:
                     api_key=self.groq_key,
                     model_name=self.routing_model,
                     temperature=0.0,
-                    max_tokens=350,
-                    request_timeout=8.0
+                    max_tokens=800,
+                    request_timeout=10.0
                 )
                 self._groq_reasoning = ChatGroq(
                     api_key=self.groq_key,
                     model_name=self.reasoning_model,
                     temperature=0.2,
-                    max_tokens=500,
-                    request_timeout=12.0
+                    max_tokens=1500,
+                    request_timeout=15.0
                 )
                 logger.info("LLMGateway initialized with Groq provider", routing_model=self.routing_model, reasoning_model=self.reasoning_model)
             except Exception as e:
@@ -278,7 +278,19 @@ class LLMGateway:
                     "requires_clarification": False
                 })
 
-            # 8. Knowledge FAQ
+            # 8. Web Search & Regulatory Intel
+            if any(k in text_lower for k in ["search web", "web search", "google search", "repo rate", "search internet", "dicgc", "80ccd"]):
+                return json.dumps({
+                    "intent": "KNOWLEDGE_FAQ",
+                    "sub_intent": "WEB_SEARCH",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Live web search or regulatory inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 8b. General Knowledge FAQ
             if any(k in text_lower for k in ["interest rate", "fixed deposit", "atm charges", "fees for", "what are the charges", "policy on", "minimum balance"]):
                 return json.dumps({
                     "intent": "KNOWLEDGE_FAQ",
@@ -290,20 +302,105 @@ class LLMGateway:
                     "requires_clarification": False
                 })
 
-            # 9. Transfer (with typo tolerance: 'trnasfer', 'send 5k')
+            # 9. Wealth & Investment Advisory (SIP, Stocks, Targets like 1 Cr)
+            if any(k in text_lower for k in ["sip", "invest", "investment", "invetsmnet", "mutual fund", "wealth plan", "grow money", "compounding", "savings of", "saving of", "crore", "1 cr", "pe rmonth", "stock", "share market"]):
+                extracted_amt = None
+                amt_m = re.search(r"(?:₹|rs\.?|inr)?\s*(\d{1,6}(?:,\d{3})*(?:\.\d+)?)\s*(?:pe\s*r\s*month|per\s*month|monthly|a\s*month|/mo)?", last_user_msg, re.IGNORECASE)
+                if amt_m:
+                    try:
+                        extracted_amt = float(amt_m.group(1).replace(",", ""))
+                    except ValueError:
+                        pass
+                sub = "STOCK_MARKET_SEARCH" if any(k in text_lower for k in ["stock", "share", "quote", "market price"]) else "SIP_PLANNING"
+                return json.dumps({
+                    "intent": "WEALTH_ADVISORY",
+                    "sub_intent": sub,
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Wealth management and investment advisory inquiry.",
+                    "entities": {"amount": extracted_amt or 1000.0, "target_amount": 10000000.0 if "cr" in text_lower or "crore" in text_lower else None},
+                    "requires_clarification": False
+                })
+
+            # 10. Statements & PDF Ledgers
+            if any(k in text_lower for k in ["statement", "sattemnet", "statemnt", "statment", "pdf statement", "download statement"]):
+                return json.dumps({
+                    "intent": "STATEMENT_REQUEST",
+                    "sub_intent": "DOWNLOAD_STATEMENT",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Bank statement download request.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 11. Policy & Insurance Catalog
+            if any(k in text_lower for k in ["health insurance", "life insurance", "mediclaim", "pmjjby", "pmsby", "ppf", "nps", "policy", "policies"]):
+                sub = "HEALTH_INSURANCE" if any(k in text_lower for k in ["health", "mediclaim"]) else (
+                    "LIFE_INSURANCE" if any(k in text_lower for k in ["life", "term"]) else (
+                        "GOVERNMENT_SCHEME" if any(k in text_lower for k in ["pmjjby", "pmsby", "ppf", "nps", "apy"]) else "BANKING_POLICY"
+                    )
+                )
+                return json.dumps({
+                    "intent": "POLICY_INQUIRY",
+                    "sub_intent": sub,
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Policy and insurance catalog inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 12. Transaction Inquiry & Tracking
+            if any(k in text_lower for k in ["last transfer", "latest transfer", "what was my last", "latest amount", "track transfer", "decline", "declined", "why was it declined", "explain transaction", "transaction history"]):
+                sub = "EXPLAIN_DECLINE" if any(k in text_lower for k in ["decline", "declined", "failed"]) else (
+                    "LATEST_TRANSFER" if any(k in text_lower for k in ["latest", "last"]) else "TRANSFER_HISTORY"
+                )
+                return json.dumps({
+                    "intent": "TRANSACTION_INQUIRY",
+                    "sub_intent": sub,
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Transaction tracking and decline diagnosis inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 13. Transfer (with typo tolerance: 'trnasfer', 'send 5k')
             if any(k in text_lower for k in ["transfer", "trnasfer", "send money", "pay rahul", "send 5000", "send "]):
+                extracted_name = None
+                extracted_val = None
+                to_m = re.search(r"\b(?:to|pay|for)\s+([A-Za-z]+)", last_user_msg, re.IGNORECASE)
+                if to_m:
+                    extracted_name = to_m.group(1).capitalize()
+                val_m = re.search(r"\b(\d{1,6}(?:,\d{3})*(?:\.\d+)?)\b", last_user_msg)
+                if val_m:
+                    try:
+                        extracted_val = float(val_m.group(1).replace(",", ""))
+                    except ValueError:
+                        pass
                 return json.dumps({
                     "intent": "TRANSFER_MONEY",
                     "sub_intent": "DOMESTIC_P2P_TRANSFER",
                     "confidence": 0.98,
                     "negation_detected": False,
                     "reasoning": "Money transfer request.",
-                    "entities": {},
+                    "entities": {"amount": extracted_val, "beneficiary_name": extracted_name},
                     "requires_clarification": False
                 })
 
-            # 10. Account Opening
-            if any(k in text_lower for k in ["open a savings", "open account", "open current", "i want to open", "open a new account", "open bank account", "new account", "create account", "register account", "open savings", "accont"]):
+            # 14. Account Opening & KYC
+            if any(k in text_lower for k in ["kyc", "is my kyc done", "verified"]):
+                return json.dumps({
+                    "intent": "OPEN_ACCOUNT",
+                    "sub_intent": "KYC_STATUS",
+                    "confidence": 0.98,
+                    "negation_detected": False,
+                    "reasoning": "Account KYC verification status inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+            elif any(k in text_lower for k in ["open a savings", "open account", "open current", "i want to open", "open a new account", "open bank account", "new account", "create account", "register account", "open savings", "accont"]):
                 return json.dumps({
                     "intent": "OPEN_ACCOUNT",
                     "sub_intent": "SAVINGS_ACCOUNT_OPENING",
@@ -314,8 +411,18 @@ class LLMGateway:
                     "requires_clarification": False
                 })
 
-            # 11. Balance Check (with typo tolerance: 'balence', 'wht is my bal')
-            if any(k in text_lower for k in ["balance", "balence", "account balance", "how much money", "wht is my bal", "show balance"]):
+            # 15. Balance Check & Multi-Account List (with typo tolerance: 'balence', 'wht is my bal')
+            if any(k in text_lower for k in ["how many account", "how many accounts", "list my account", "list accounts", "my accounts", "all accounts"]):
+                return json.dumps({
+                    "intent": "BALANCE_CHECK",
+                    "sub_intent": "LIST_ACCOUNTS",
+                    "confidence": 0.99,
+                    "negation_detected": False,
+                    "reasoning": "Multi-account list and portfolio balance inquiry.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+            elif any(k in text_lower for k in ["balance", "balence", "account balance", "how much money", "wht is my bal", "show balance"]):
                 return json.dumps({
                     "intent": "BALANCE_CHECK",
                     "sub_intent": "OTHER",
@@ -326,15 +433,40 @@ class LLMGateway:
                     "requires_clarification": False
                 })
 
-            # 12. General Conversation
+            # 16. Gratitude & Appreciation
+            if any(k in text_lower for k in ["thank you", "thanks", "thanku", "thx", "ty", "appreciate it", "thank you so much"]):
+                return json.dumps({
+                    "intent": "GENERAL_CONVERSATION",
+                    "sub_intent": "THANK_YOU",
+                    "confidence": 0.99,
+                    "negation_detected": False,
+                    "reasoning": "User expressed gratitude.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 17. Greeting
+            if any(text_lower.strip().startswith(g) for g in ["hi", "hello", "hey", "good morning", "good evening", "namaste", "hola", "sup"]):
+                return json.dumps({
+                    "intent": "GENERAL_CONVERSATION",
+                    "sub_intent": "GREETING",
+                    "confidence": 0.95,
+                    "negation_detected": False,
+                    "reasoning": "Customer greeting.",
+                    "entities": {},
+                    "requires_clarification": False
+                })
+
+            # 18. Unrecognized / Ambiguous Query (Requires clarification, like ChatGPT)
             return json.dumps({
                 "intent": "GENERAL_CONVERSATION",
-                "sub_intent": "GREETING",
-                "confidence": 0.85,
+                "sub_intent": "OTHER",
+                "confidence": 0.50,
                 "negation_detected": False,
-                "reasoning": "General greeting, conversation, or unspecified query.",
+                "reasoning": "Unrecognized or conversational query.",
                 "entities": {},
-                "requires_clarification": False
+                "requires_clarification": True,
+                "clarification_prompt": f"I'm here to assist you with your banking needs. I couldn't quite understand '{last_user_msg}'. Could you please specify whether you'd like to check your balance, make a transfer, manage cards, explore investments, or speak with support?"
             })
 
         # Conversational generation fallback

@@ -14,6 +14,8 @@ from agents.wealth.prompts import (
     WEALTH_ADVISOR_SYSTEM_PROMPT,
     STUDENT_SIP_RECOMMENDATION_PROMPT,
     GENERAL_SIP_RECOMMENDATION_PROMPT,
+    build_wealth_stock_market_user_prompt,
+    build_wealth_sip_user_prompt,
 )
 import structlog
 
@@ -53,35 +55,34 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
     elif any(w in last_msg.lower() for w in ["conservative", "safe", "low risk"]):
         risk = "CONSERVATIVE"
 
-    # Extract monthly amount or total budget
+    # Extract monthly amount vs target future corpus
     monthly_amt = wealth_data.get("monthly_investment")
-    lakh_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:lakh|lac)s?", last_msg, re.IGNORECASE)
+    target_corpus = wealth_data.get("target_corpus")
+
+    # Detect future target corpus (e.g. "1 cr", "crore", "target", "need in future")
     cr_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:crore|cr)s?", last_msg, re.IGNORECASE)
-    k_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:k|thousand)s?", last_msg, re.IGNORECASE)
+    if cr_match:
+        target_corpus = float(cr_match.group(1)) * 10000000.0
+        wealth_data["target_corpus"] = target_corpus
 
-    extracted_total = None
-    if lakh_match:
-        extracted_total = float(lakh_match.group(1)) * 100000.0
-    elif cr_match:
-        extracted_total = float(cr_match.group(1)) * 10000000.0
-    elif k_match:
-        extracted_total = float(k_match.group(1)) * 1000.0
+    is_per_month = any(w in last_msg.lower() for w in ["per month", "pe rmonth", "monthly", "savings of", "save", "a month", "/mo", "sip"])
 
-    if extracted_total:
-        # If user specifies a total budget or corpus to turn into an engine, spread over 5 years (60 months)
-        if any(w in last_msg.lower() for w in ["budget", "total", "lumpsum", "corpus", "turn"]):
-            monthly_amt = round(extracted_total / 60.0, 2)
-        else:
-            monthly_amt = extracted_total
-    else:
-        amt_match = re.search(r"(?:₹|rs\.?|inr)?\s*(\d{1,6}(?:,\d{3})*(?:\.\d+)?)\s*(?:monthly|per month|sip|a month|/mo|amount)?", last_msg, re.IGNORECASE)
-        if amt_match:
+    if not monthly_amt or is_per_month:
+        lakh_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:lakh|lac)s?", last_msg, re.IGNORECASE)
+        k_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:k|thousand)s?", last_msg, re.IGNORECASE)
+        amt_match = re.search(r"(?:savings of|save|invest|sip of)?\s*(?:₹|rs\.?|inr)?\s*(\d{1,6}(?:,\d{3})*(?:\.\d+)?)\s*(?:pe\s*r\s*month|per\s*month|monthly|a\s*month|/mo)?", last_msg, re.IGNORECASE)
+
+        if is_per_month and amt_match and amt_match.group(1):
             try:
                 val = float(amt_match.group(1).replace(",", ""))
                 if val > 50 and val not in [2024, 2025, 2026, 2027]:
                     monthly_amt = val
-            except ValueError:
+            except (ValueError, AttributeError):
                 pass
+        elif k_match and is_per_month:
+            monthly_amt = float(k_match.group(1)) * 1000.0
+        elif not target_corpus and lakh_match:
+            monthly_amt = float(lakh_match.group(1)) * 100000.0
 
     if not monthly_amt or monthly_amt <= 50:
         monthly_amt = 1000.0 if persona == "STUDENT" else 5000.0
@@ -151,13 +152,11 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
         advice = default_stock_advice
 
         try:
-            user_prompt = (
-                f"Customer Name: {customer_name}\n"
-                f"Customer Query: \"{last_msg}\"\n\n"
-                f"LIVE MARKET DATA:\n"
-                f"- Quote Details: {json.dumps(quote_info)}\n"
-                f"- Live Web Search Insights: {json.dumps(web_results[:3])}\n\n"
-                "Synthesize this live data and address the customer's query directly according to your wealth advisory persona."
+            user_prompt = build_wealth_stock_market_user_prompt(
+                customer_name=customer_name,
+                last_msg=last_msg,
+                quote_info=quote_info,
+                web_results=web_results
             )
             llm_res = await llm_gateway.invoke_chat([
                 SystemMessage(content=WEALTH_ADVISOR_SYSTEM_PROMPT),
@@ -263,22 +262,19 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
         persona_instructions = STUDENT_SIP_RECOMMENDATION_PROMPT if persona == "STUDENT" else GENERAL_SIP_RECOMMENDATION_PROMPT
         system_content = f"{WEALTH_ADVISOR_SYSTEM_PROMPT}\n\n{persona_instructions}".strip()
 
-        user_prompt = (
-            f"Customer Name: {customer_name}\n"
-            f"Customer Persona: {persona} (Risk Profile: {risk})\n"
-            f"Customer Query: \"{last_msg}\"\n\n"
-            f"MATHEMATICAL FIGURES (Use directly, DO NOT derive or print formula equations):\n"
-            f"- Monthly Investment: ₹{monthly_amt:,.2f}\n"
-            f"- 5-Year Invested Principal: {total_inv_str}\n"
-            f"- 5-Year Projected Maturity: {future_val_str} (Wealth Gain: +{gain_str}, {multiplier}x)\n"
-            f"- 10-Year Milestone: ₹{ten_yr_val:,.2f}\n"
-            f"- Recommended Allocations: {json.dumps(strategy.get('allocations', []))}\n\n"
-            "REQUIREMENTS FOR YOUR RESPONSE:\n"
-            "1. Be conversational, crisp, and engaging in modern ChatGPT banking agent style (max 180 words).\n"
-            "2. Present the figures with a clean Markdown table for the Asset Allocation breakdown (Category, Share %, Monthly ₹, Top Direct Funds).\n"
-            "3. DO NOT output manual algebraic equations, LaTeX derivations, or exponent arithmetic (no '(1+r)^60' or step-by-step arithmetic).\n"
-            f"4. Do NOT refer to the customer as a college student unless Customer Persona is STUDENT.\n"
-            "5. End with a friendly, direct call to action asking if they want to activate the SIP mandate or customize amounts."
+        user_prompt = build_wealth_sip_user_prompt(
+            customer_name=customer_name,
+            persona=persona,
+            risk=risk,
+            last_msg=last_msg,
+            monthly_amt=monthly_amt,
+            target_corpus=target_corpus,
+            total_inv_str=total_inv_str,
+            future_val_str=future_val_str,
+            gain_str=gain_str,
+            multiplier=multiplier,
+            ten_yr_val=ten_yr_val,
+            strategy=strategy
         )
 
         llm_res = await llm_gateway.invoke_chat([

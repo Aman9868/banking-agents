@@ -32,3 +32,59 @@ GENERAL_SIP_RECOMMENDATION_PROMPT = """Context: General / professional investor.
 - Highlight low expense ratio Direct Plans and balanced risk management.
 """
 
+import json
+from typing import Dict, Any, List, Optional
+
+
+def build_wealth_stock_market_user_prompt(
+    customer_name: str,
+    last_msg: str,
+    quote_info: Optional[Dict[str, Any]],
+    web_results: List[Dict[str, Any]]
+) -> str:
+    """Builds user prompt for stock quote and live market analysis synthesis."""
+    return (
+        f"Customer Name: {customer_name}\n"
+        f"Customer Query: \"{last_msg}\"\n\n"
+        f"LIVE MARKET DATA:\n"
+        f"- Quote Details: {json.dumps(quote_info)}\n"
+        f"- Live Web Search Insights: {json.dumps(web_results[:3])}\n\n"
+        "Synthesize this live data and address the customer's query directly according to your wealth advisory persona."
+    )
+
+
+def build_wealth_sip_user_prompt(
+    customer_name: str,
+    persona: str,
+    risk: str,
+    last_msg: str,
+    monthly_amt: float,
+    target_corpus: Optional[float],
+    total_inv_str: str,
+    future_val_str: str,
+    gain_str: str,
+    multiplier: float,
+    ten_yr_val: float,
+    strategy: Dict[str, Any]
+) -> str:
+    """Builds user prompt for personalized SIP compounding recommendation."""
+    return (
+        f"Customer Name: {customer_name}\n"
+        f"Customer Persona: {persona} (Risk Profile: {risk})\n"
+        f"Customer Query: \"{last_msg}\"\n\n"
+        f"MATHEMATICAL FIGURES (Use directly, DO NOT derive or print formula equations):\n"
+        f"- Monthly Investment: ₹{monthly_amt:,.2f}\n"
+        f"{f'- Long-term Milestone / Target Corpus: ₹{target_corpus:,.2f}' if target_corpus else ''}\n"
+        f"- 5-Year Invested Principal: {total_inv_str}\n"
+        f"- 5-Year Projected Maturity: {future_val_str} (Wealth Gain: +{gain_str}, {multiplier}x)\n"
+        f"- 10-Year Milestone: ₹{ten_yr_val:,.2f}\n"
+        f"- Recommended Allocations: {json.dumps(strategy.get('allocations', []))}\n\n"
+        "REQUIREMENTS FOR YOUR RESPONSE:\n"
+        "1. Be conversational, crisp, and engaging in modern ChatGPT banking agent style (max 180 words).\n"
+        "2. Present the figures with a clean Markdown table for the Asset Allocation breakdown (Category, Share %, Monthly ₹, Top Direct Funds).\n"
+        "3. DO NOT output manual algebraic equations, LaTeX derivations, or exponent arithmetic (no '(1+r)^60' or step-by-step arithmetic).\n"
+        f"4. Do NOT refer to the customer as a college student unless Customer Persona is STUDENT.\n"
+        "5. If the customer mentioned a milestone like ₹1 Crore, explain encouragingly how starting with this monthly SIP and gradually stepping up annual contributions puts them on track.\n"
+        "6. End with a friendly, direct call to action asking if they want to activate the SIP mandate or customize amounts."
+    )
+
