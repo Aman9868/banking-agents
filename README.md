@@ -12,9 +12,9 @@ An enterprise-grade, conversational banking platform built with **LangGraph**, *
 
 🚀 **Live Interactive Demo**: [**banking-agents-tau.vercel.app**](https://banking-agents-tau.vercel.app/)
 
-| NovaBank Conversational Portal | Customer Persona & Guest Onboarding Switcher |
-| :---: | :---: |
-| ![NovaBank AI Interface](docs/screenshots/ui_chat_interface.png) | ![Customer Persona Switcher](docs/screenshots/persona_switcher.png) |
+| NovaBank Conversational Portal | Biometric Video KYC & Corporate Passbook | Customer Persona Switcher |
+| :---: | :---: | :---: |
+| ![NovaBank AI Interface](docs/screenshots/ui_chat_interface.png) | ![Biometric KYC & Corporate Passbook](docs/screenshots/kyc_biometric_onboarding.png) | ![Customer Persona Switcher](docs/screenshots/persona_switcher.png) |
 
 The enterprise banking portal features:
 - **Interactive Generative UI (GenUI)**: Real-time dynamic widgets (Account Cards, EMI Sliders, Transaction Receipts, Spending Breakdowns).
@@ -24,6 +24,10 @@ The enterprise banking portal features:
 ---
 
 ## 💬 Live Chat Samples & Multi-Agent Interactions
+
+<p align="center">
+  <img src="docs/screenshots/multi_agent_chat_samples.jpg" alt="NovaBank Multi-Agent Live Chat Samples" width="100%" />
+</p>
 
 ### 1. Conversational Retail Savings Account Opening (Aadhaar OCR & Live Biometric KYC)
 ```markdown
@@ -99,6 +103,10 @@ Your CURRENT account CA91028374 is active with commercial net banking and corpor
 │  Overdraft Cap:  ₹500,000.00       Balance: ₹0.00           │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+<p align="center">
+  <img src="docs/screenshots/kyc_biometric_onboarding.png" alt="Director Facial Liveness KYC & Corporate Passbook" width="650" />
+</p>
 
 ### 2. Controlled Money Transfer with Parallel Fraud Scoring & Two-Phase Confirmation
 ```markdown
@@ -347,7 +355,11 @@ Every domain agent in NovaBank follows a clean, decoupled architecture segregati
     - Context interruption & pause-and-resume continuation logic (`_build_interruption_continuation`).
     - Contextual gratitude acknowledgments and ChatGPT-style fallback engine ([`agents/supervisor/prompts.py`](agents/supervisor/prompts.py)).
 
-## Live Chat Samples
+## Live Chat Samples: Wealth, Market Intel, Policies & Fallback
+
+<p align="center">
+  <img src="docs/screenshots/wealth_policy_fallback_samples.jpg" alt="NovaBank Live Web Demo: Wealth Advisory, Market Quotes, Policy Catalog & ChatGPT-Style Fallback" width="750" />
+</p>
 
 ### Sample 8: Student SIP Investment Planning & Compounding
 ```text
