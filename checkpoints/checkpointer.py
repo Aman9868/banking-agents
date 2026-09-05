@@ -54,7 +54,7 @@ async def get_checkpointer(use_postgres: bool = True):
     try:
         # Construct psycopg sync/async connection string from POSTGRES_SYNC_URL
         conn_str = settings.POSTGRES_SYNC_URL
-        _pool = AsyncConnectionPool(conninfo=conn_str, max_size=5, kwargs={"autocommit": True}, open=False)
+        _pool = AsyncConnectionPool(conninfo=conn_str, max_size=5, kwargs={"autocommit": True, "prepare_threshold": 0}, open=False)
         await _pool.open()
         _async_pg_saver = AsyncPostgresSaver(_pool)
         # Setup tables if not present

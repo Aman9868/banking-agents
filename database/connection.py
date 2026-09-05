@@ -17,6 +17,8 @@ Base = declarative_base()
 connect_args = {}
 if "sqlite" in settings.DATABASE_URL:
     connect_args["check_same_thread"] = False
+elif "postgresql" in settings.DATABASE_URL:
+    connect_args["statement_cache_size"] = 0
 
 # Using NullPool for asyncpg avoids cross-event-loop connection contamination in async tests and workers
 engine: AsyncEngine = create_async_engine(
