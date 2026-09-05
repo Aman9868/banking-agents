@@ -21,7 +21,10 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-STATEMENTS_STORAGE_DIR = os.path.join(os.getcwd(), "storage", "statements")
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    STATEMENTS_STORAGE_DIR = os.path.join("/tmp", "statements")
+else:
+    STATEMENTS_STORAGE_DIR = os.path.join(os.getcwd(), "storage", "statements")
 os.makedirs(STATEMENTS_STORAGE_DIR, exist_ok=True)
 
 
