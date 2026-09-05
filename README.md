@@ -25,163 +25,25 @@ The enterprise banking portal features:
 
 ## 💬 Live Chat Samples & Multi-Agent Interactions
 
+### Multi-Agent Workflows & Core Banking Safeguards
 <p align="center">
   <img src="docs/screenshots/multi_agent_chat_samples.jpg" alt="NovaBank Multi-Agent Live Chat Samples" width="100%" />
 </p>
 
-### 1. Conversational Retail Savings Account Opening (Aadhaar OCR & Live Biometric KYC)
-```markdown
-👤 User: I want to open a new savings account with NovaBank
-🤖 Assistant: Absolutely! I can help you open a new bank account. May I have your full name?
-👤 User: Amanpreet Singh
-🤖 Assistant: Thanks, Amanpreet Singh. What is your date of birth?
-👤 User: 14/08/1996
-🤖 Assistant: What email address would you like to use for your account?
-👤 User: amanpreet@example.com
-🤖 Assistant: Now let's complete your official Identity Verification (KYC).
-Please provide your 12-digit Aadhaar Number or upload a photo/PDF of your Aadhaar card below.
+- **Controlled Money Transfer**: Parallel fraud scoring, daily limit checks, and explicit two-phase confirmation before settlement.
+- **Mid-Flow Interruption & Context Switching**: Seamlessly answers customer inquiries (e.g., balance check) mid-application, then automatically resumes the paused workflow.
+- **Instant Card Freeze Safeguard**: Real-time card locking and replacement card issuance for compromised or lost cards.
+- **Deterministic Loan EMI Calculation**: Live mathematical EMI computations and Debt-to-Income (DTI) ratio eligibility checks.
+- **Official PDF Statements**: Automated ReportLab Platypus PDF generation with SHA-256 tamper-verification seal.
+- **Root-Cause Transaction Diagnosis**: Plain-language customer explanation of banking decline codes (e.g., beneficiary cool-off limits).
 
-[AADHAAR_UPLOAD_WIDGET: Secure 12-digit Verhoeff Checksum OCR Scanner & PII Masking]
-
-👤 User: 5482 9102 7382
-🤖 Assistant: Aadhaar verified successfully (••••-••••-7382)! ✅ 
-The final step is a quick Live Video / Biometric KYC to confirm facial liveness and blink verification.
-
-[LIVE_FACE_KYC_WIDGET: 3-Second Camera Liveness, Blink Detection & Aadhaar Face Match]
-
-👤 User: verified
-🤖 Assistant: 🎉 Congratulations Amanpreet! Your biometric KYC and AML compliance check are complete.
-Your SAVINGS account SB64237377 has been successfully opened!
-
-┌─────────────────────────────────────────────────────────────┐
-│  NovaBank Digital Account Passbook                          │
-│  ACTIVE & KYC VERIFIED (BIOMETRIC CONFIRMED)                │
-│  Account Number: SB64237377        Holder: Amanpreet Singh │
-│  Customer ID:    CUST-8536         Type:   SAVINGS          │
-│  Aadhaar Ref:    ••••-••••-7382    Branch: Digital Branch   │
-│  IFSC Code:      NOVA0001001       Balance: ₹0.00           │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 1b. Commercial Current Account Opening (Business Entity & 15-Digit GSTIN Verification)
-```markdown
-👤 User: I need to open a current account for my company
-🤖 Assistant: Absolutely! I can help you open a NovaBank Current Account. May I have your full legal name as the authorized director?
-👤 User: Amanpreet Singh
-🤖 Assistant: Thanks, Amanpreet Singh. What is your date of birth?
-👤 User: 14/08/1996
-🤖 Assistant: What official email address should be linked to this business account?
-👤 User: director@acmetech.com
-🤖 Assistant: Thank you! To open a NovaBank Current Account, please share your registered Company or Business Name.
-👤 User: Acme Tech Solutions Private Limited
-🤖 Assistant: Please provide your 15-character GSTIN (Goods & Services Tax Number) or upload your Form GST REG-06 registration certificate for Acme Tech Solutions Private Limited.
-
-[GST_VERIFY_WIDGET: Real-Time GSTIN Format Validator & Ministry of Corporate Affairs Registry]
-
-👤 User: 07AABCB1234D1Z8
-🤖 Assistant: GSTIN 07AABCB1234D1Z8 verified successfully! ✅
-Entity: Private Limited Company | State: Delhi (07) | Status: Active.
-Next, please enter the authorized director's 12-digit Aadhaar Number below.
-
-[AADHAAR_UPLOAD_WIDGET: Director Aadhaar Verification]
-
-👤 User: 5482 9102 7382
-🤖 Assistant: Director Aadhaar verified (••••-••••-7382)! Now activating 3-second live face match.
-
-[LIVE_FACE_KYC_WIDGET: Director Facial Liveness & Biometric Verification]
-
-👤 User: verified
-🤖 Assistant: 🎉 Congratulations Amanpreet! Acme Tech Solutions Private Limited is fully onboarded.
-Your CURRENT account CA91028374 is active with commercial net banking and corporate overdraft limits!
-
-┌─────────────────────────────────────────────────────────────┐
-│  NovaBank Corporate Current Account Passbook                │
-│  ACTIVE & ENTERPRISE KYC VERIFIED                           │
-│  Account Number: CA91028374        Company: Acme Tech Sol.  │
-│  Authorized Rep: Amanpreet Singh   Type:   CURRENT (CORP)   │
-│  GSTIN:          07AABCB1234D1Z8   Branch: Commercial Hub   │
-│  Overdraft Cap:  ₹500,000.00       Balance: ₹0.00           │
-└─────────────────────────────────────────────────────────────┘
-```
-
+### Biometric KYC & Dual-Track Digital Onboarding
 <p align="center">
-  <img src="docs/screenshots/kyc_biometric_onboarding.png" alt="Director Facial Liveness KYC & Corporate Passbook" width="650" />
+  <img src="docs/screenshots/kyc_biometric_onboarding.png" alt="Director Facial Liveness KYC & Corporate Passbook" width="80%" />
 </p>
 
-### 2. Controlled Money Transfer with Parallel Fraud Scoring & Two-Phase Confirmation
-```markdown
-👤 User: Transfer ₹5,000 to Rahul
-🤖 Assistant: Transfer ₹5,000.00 to Rahul Sharma (Account: ****3456).
-   Fraud Score: 0.05 (LOW RISK).
-   Daily Transfer Limit Available: ₹95,000.00.
-   Please reply 'Yes' to confirm the transfer, or 'No' to cancel.
-
-👤 User: Yes
-🤖 Assistant: Transfer initiated! ₹5,000.00 sent successfully to Rahul Sharma.
-   Transaction Reference: TXN-94821032
-   New Available Balance: ₹95,000.00.
-```
-
-### 3. Mid-Flow Interruption & Context Switching
-```markdown
-👤 User: I want to open a savings account
-🤖 Assistant: Absolutely! What is your full legal name?
-👤 User: Amanpreet Singh
-🤖 Assistant: Thanks Amanpreet! What is your date of birth?
-👤 User: Before that, what's my current balance?
-🤖 Assistant: Your current balance for Savings account ****1234 is ₹100,000.00.
-
-   Now, continuing with your account application: What is your date of birth?
-```
-
-### 4. Card Security & Instant Lock Safeguard
-```markdown
-👤 User: I lost my debit card, please freeze it right now!
-🤖 Assistant: Your NovaBank Platinum Debit Card ending in ****7821 has been INSTANTLY FROZEN.
-   All online, POS, and ATM transactions are temporarily blocked.
-   Would you like me to order a replacement card to your registered address?
-```
-
-### 5. Loan Advisory & Mathematical EMI Calculation
-```markdown
-👤 User: What is the EMI for a 5 lakh loan for 3 years?
-🤖 Assistant: For a Personal Loan of ₹5,00,000 over 36 months at 10.50% annual interest:
-   • Monthly EMI: ₹16,254.67
-   • Total Interest: ₹85,168.00
-   • Total Payable: ₹5,85,168.00
-   Would you like to check your eligibility or proceed with an application?
-```
-
-### 6. Official Bank Account Statement Generation (ReportLab Platypus PDF)
-```markdown
-👤 User: Download my last 6 months statement
-🤖 Assistant: 📄 **NovaBank Official Account Statement** (ID: `STMT-20260904-BD94BE`)
-
-• **Account**: SB••••1234 (SAVINGS)
-• **Statement Period**: 08 Mar 2026 to 04 Sep 2026
-• **Opening Balance**: ₹100,000.00
-• **Total Credits**: ₹0.00 (+)
-• **Total Debits**: ₹0.00 (-)
-• **Closing Balance**: ₹100,000.00
-• **Total Transactions**: 1
-
-🔒 *Digitally signed with SHA-256 tamper verification seal.*
-
-📥 [**Download Official PDF Statement**](/api/v1/statements/download/STMT-20260904-BD94BE.pdf)
-```
-
-### 7. Conversational Transaction & Spending Explanations (Root-Cause Diagnosis)
-```markdown
-👤 User: Why was my last transaction declined?
-🤖 Assistant: ### ⚠️ Transaction Diagnosis: TXN-10091
-
-Your transfer of **₹25,000.00** to **Rahul Sharma** on 04 September 2026 was **DECLINED**.
-
-**Root Cause:** Beneficiary Cool-Off Security Check Active
-This transfer was paused and declined because the newly added beneficiary is still undergoing NovaBank's mandatory cooling-off security period. To protect customer accounts from authorized push payment fraud, new beneficiaries require a 30-minute verification window before transfers exceeding standard limits are processed.
-
-💡 **Recommended Next Step:** Please wait for the cooling period to complete, or transfer a lower initial amount (under ₹10,000).
-```
+- **Retail Savings Account Onboarding**: Multi-turn demographic capture, 12-digit Aadhaar Verhoeff mathematical checksum validation, real-time facial liveness & blink detection, and instant passbook issuance (`SB••••`).
+- **Commercial Current Account Onboarding**: Legal entity classification, 15-character GSTIN validation (Ministry of Corporate Affairs registry), authorized director biometric verification, and corporate passbook with overdraft facilities (`CA••••`).
 
 ---
 
@@ -355,83 +217,16 @@ Every domain agent in NovaBank follows a clean, decoupled architecture segregati
     - Context interruption & pause-and-resume continuation logic (`_build_interruption_continuation`).
     - Contextual gratitude acknowledgments and ChatGPT-style fallback engine ([`agents/supervisor/prompts.py`](agents/supervisor/prompts.py)).
 
-## Live Chat Samples: Wealth, Market Intel, Policies & Fallback
+## 📈 Wealth Advisory, Market Intel, Policies & Fallback Interactions
 
 <p align="center">
-  <img src="docs/screenshots/wealth_policy_fallback_samples.jpg" alt="NovaBank Live Web Demo: Wealth Advisory, Market Quotes, Policy Catalog & ChatGPT-Style Fallback" width="750" />
+  <img src="docs/screenshots/wealth_policy_fallback_samples.jpg" alt="NovaBank Live Web Demo: Wealth Advisory, Market Quotes, Policy Catalog & ChatGPT-Style Fallback" width="100%" />
 </p>
 
-### Sample 8: Student SIP Investment Planning & Compounding
-```text
-User: "I am a college student so my monthly income is 2000. I want to do SIP investment, tell me the best SIP plans"
-
-NovaBank Assistant:
-🎓 Student Starter Wealth Plan: Low Risk, Zero Hidden Fees & High Compounding
-As a college student investing ₹2,000.00/month, your biggest superpower is Time & Compounding!
-
-📊 Your 5-Year Compounding Projection (₹2,000/month @ 12% CAGR):
-• Total Amount Invested: ₹120,000.00
-• Estimated Wealth Value: ₹164,972.74 (Gains: +₹44,972.74, 1.37x your principal)
-• 10-Year Horizon: Investing consistently for 10 years would yield ₹464,698.83!
-
-🎯 Recommended Student Asset Allocation:
-• Nifty 50 Index Fund (60%): ₹1,200.00/month (UTI / Navi Nifty 50 Direct)
-• Flexi-Cap Fund (25%): ₹500.00/month (Parag Parikh Flexi Cap)
-• Liquid Buffer (15%): ₹300.00/month (ICICI Liquid / Auto-Sweep RD)
-
-[SIP_PLANNER_WIDGET: Interactive Monthly Slider, Wealth Projections, Auto-SIP Mandate Button]
-```
-
-### Sample 9: Free Live Market & Stock Search
-```text
-User: "What are the best stocks to buy right now in India?"
-
-NovaBank Assistant:
-📈 Live Financial & Stock Market Insights (via Free Web Search):
-1. Top Recommended Stocks to Watch in 2025/2026 - Indian Markets
-   Top large-cap stocks with strong ROE and consistent earnings growth include Reliance Industries, HDFC Bank, TCS, and ICICI Bank.
-2. Live Market Quote: RELIANCE.NS • ₹1,325.20 🟢 (+0.85%)
-
-[STOCK_MARKET_WIDGET: Real-Time Price Ticker, Analyst Consensus, Read More Articles]
-```
-
-### Sample 10: Health Insurance & Government Schemes
-```text
-User: "Tell me about health insurance policies for students and PMJJBY"
-
-NovaBank Assistant:
-📋 NovaBank Insurance & Policy Navigator:
-1. Nova Care Student Health Shield
-   • Target Group: College Students & Young Adults (18-25)
-   • Sum Insured: ₹3,00,000 - ₹5,00,000
-   • Premium: Starting at ₹1,850/year (~₹155/month)
-   • Highlights: Cashless hospitalization across 10,500+ hospitals, no pre-policy checkup, 80D tax deductions.
-
-2. Pradhan Mantri Jeevan Jyoti Bima Yojana (PMJJBY)
-   • Target Group: All Citizens with Bank Account (18-50 years)
-   • Sum Insured: ₹2,00,000 Life Cover
-   • Premium: ₹436/year (Auto-debited from Savings Account)
-
-[POLICY_CARD_WIDGET: Side-by-side policy cards, coverage badges, instant enrollment]
-```
-
-### Sample 11: Resilient Out-of-Domain Query & ChatGPT-Style Fallback
-```text
-User: "can you bake me a chocolate cake"
-
-NovaBank Assistant:
-Hello Amanpreet! I understand you're asking regarding *'can you bake me a chocolate cake'*, but I need a little more clarity to help you accurately.
-
-Here are some of the things I can help you with right away:
-• **Money Transfers & UPI**: Send funds, verify UPI IDs, or check/add beneficiaries
-• **Accounts & Balances**: Check account balance, view account numbers, or download official statements
-• **Cards & Limits**: Freeze/unfreeze debit/credit cards or set online transaction limits
-• **Wealth & Investments**: Plan monthly SIPs, compound growth calculators, or search live stock prices
-• **Loans & EMI**: Calculate EMI estimates or verify loan eligibility
-• **Bills & Disputes**: Pay electricity/utility bills or investigate declined transactions
-
-Could you please tell me which of these you'd like to proceed with, or rephrase your request?
-```
+- **Student SIP Investment Planning**: Compounding projections ($M = P \cdot \frac{(1+r)^n - 1}{r} \cdot (1+r)$), low-risk micro-SIP asset allocations, and interactive slider widget.
+- **Free Live Market & Stock Search**: Live web market search, Yahoo Finance real-time stock quotes, and financial news without API keys.
+- **Health Insurance & Government Schemes**: Comparison cards for student health shields, PMJJBY (₹436/yr), PMSBY, and sovereign schemes (PPF/NPS).
+- **ChatGPT-Style Resilient Fallback**: Graceful handling of out-of-domain/ambiguous queries with polite clarification and suggested actionable banking topics.
 
 ---
 
