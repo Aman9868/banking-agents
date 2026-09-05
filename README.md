@@ -202,8 +202,16 @@ Below is the complete multi-agent execution graph across all 7 autonomous subgra
 
 Every domain agent in NovaBank follows a clean, modular architecture segregating **node functions** from **graph definitions**:
 - **`nodes.py`**: Pure functional node logic, tool executions, LLM prompts/personas, and state mutations.
+Every domain agent in NovaBank follows a clean, decoupled architecture segregating **prompts**, **node functions**, and **graph topologies**:
+- **`prompts.py`**: Clean, segregated prompt templates, system instructions, few-shot training examples, and response formatters (zero hardcoded prompt strings in logic nodes).
+- **`nodes.py`**: Pure functional node logic, tool executions, and state mutations driven directly by LLM router sub-intents (no brittle keyword matching).
 - **`graph.py`**: StateGraph definitions, routing functions, fan-out/fan-in topology, and compilation.
 - **`__init__.py`**: Public module interface exporting both compiled subgraphs and node functions.
+- **`__init__.py`**: Public module interface exporting compiled subgraphs, nodes, and prompts.
+
+### 🛡️ ChatGPT-Style Conversational Fallback & Resilient Recovery Engine
+- **Conversational Clarification Fallback** ([`agents/supervisor/prompts.py`](agents/supervisor/prompts.py)): When an out-of-domain, unrecognized, or ambiguous query is received (e.g., *"can you bake me a chocolate cake"*), the assistant behaves like ChatGPT—politely acknowledging the query, clarifying its banking purpose, and presenting clear actionable categories.
+- **Execution & System Error Fallback** ([`apps/api/routes/chat.py`](apps/api/routes/chat.py)): If an unexpected exception or timeout occurs during execution or a subgraph produces an empty response, the endpoint catches it gracefully, logs the trace, saves a reassuring assistant response in the database session, and returns immediate safety actions instead of a raw 500 error.
 
 ### Specialized Domain Subgraphs
 
@@ -213,6 +221,7 @@ Every domain agent in NovaBank follows a clean, modular architecture segregating
    - 100% Free Web Market Search and Yahoo Finance live stock quotes (zero API keys).
    - Dynamic interactive `SIP_PLANNER_WIDGET` and `STOCK_MARKET_WIDGET`.
    - Dedicated LLM System Prompt: [`agents/wealth/prompts.py`](agents/wealth/prompts.py).
+   - Dedicated LLM System Prompts & Formatters: [`agents/wealth/prompts.py`](agents/wealth/prompts.py).
 
 2. **Insurance & Policy Advisory Subgraph** ([`agents/policy/nodes.py`](agents/policy/nodes.py) / [`agents/policy/graph.py`](agents/policy/graph.py)):
    - Health Insurance policies (Nova Care Student Shield, Family Floater, Super Top-Up).
@@ -220,49 +229,65 @@ Every domain agent in NovaBank follows a clean, modular architecture segregating
    - Sovereign wealth schemes (PPF @ 7.10% EEE, NPS Tier-1 & 2, APY guaranteed lifelong pension).
    - Dynamic `POLICY_CARD_WIDGET` with side-by-side comparisons and tax deductions (Section 80C & 80D).
    - Dedicated LLM System Prompt: [`agents/policy/prompts.py`](agents/policy/prompts.py).
+   - Dedicated LLM System Prompts: [`agents/policy/prompts.py`](agents/policy/prompts.py).
 
 3. **Controlled Money Transfer Subgraph** ([`agents/transfer/nodes.py`](agents/transfer/nodes.py) / [`agents/transfer/graph.py`](agents/transfer/graph.py)):
    - Parallel Fan-Out: concurrent fraud scoring, AML watchlist checks, and ledger balance verification.
    - Computes deterministic Fraud Score (velocity, cooling-off periods).
    - Enforces Transfer Policy rules (daily limits, step-up auth, HITL escalation).
    - Mandatory explicit two-phase confirmation (`Yes`/`No`) before execution with idempotency key.
+   - Dedicated Slot Extraction Prompts: [`agents/transfer/prompts.py`](agents/transfer/prompts.py).
 
 4. **Account Opening Subgraph** ([`agents/account/nodes.py`](agents/account/nodes.py) / [`agents/account/graph.py`](agents/account/graph.py)):
    - Multi-turn conversational slot filling (`name` ➔ `dob` ➔ `email` ➔ `account_type`).
    - Verhoeff checksum algorithm for Aadhaar validation and GSTIN regex verification.
    - Biometric liveness verification and digital KYC.
    - KYC validation and AML watchlist screening with compliance officer `interrupt()` pause.
+   - Dedicated Onboarding Prompts: [`agents/account/prompts.py`](agents/account/prompts.py).
 
 5. **Cards Operations & Security Subgraph** ([`agents/card/nodes.py`](agents/card/nodes.py) / [`agents/card/graph.py`](agents/card/graph.py)):
+   - Driven directly by LLM router sub-intents (`FREEZE_CARD`, `UNFREEZE_CARD`, `REPLACE_CARD`, `SET_LIMIT`, `CARD_STATUS`).
    - Emergency freeze (`"Freeze my debit card"`, `"My card was stolen"`).
    - Unfreeze card (`"Unfreeze my card"`).
    - Configure online/ATM daily spending limits.
+   - Unfreeze card and configure online/ATM daily spending limits.
    - Replace lost/stolen card with instant blocking and new card dispatch.
+   - Dedicated Response Formatters: [`agents/card/prompts.py`](agents/card/prompts.py).
 
 6. **Loans & Advisory Subgraph** ([`agents/loan/nodes.py`](agents/loan/nodes.py) / [`agents/loan/graph.py`](agents/loan/graph.py)):
+   - Driven by LLM router sub-intents (`APPLY_LOAN`, `LOAN_ELIGIBILITY`, `EMI_CALCULATION`).
    - Deterministic mathematical EMI calculation ($E = P \cdot r \cdot \frac{(1+r)^n}{(1+r)^n - 1}$).
    - Debt-to-Income (DTI) ratio eligibility check against 50% income threshold.
    - Multi-step loan application submission to Core Banking.
+   - Dedicated Advisory Prompts: [`agents/loan/prompts.py`](agents/loan/prompts.py).
 
 7. **Bill Payments & UPI Subgraph** ([`agents/payment/nodes.py`](agents/payment/nodes.py) / [`agents/payment/graph.py`](agents/payment/graph.py)):
+   - Driven by LLM router sub-intents (`UPI_PAYMENT`, `ELECTRICITY_BILL`, `BROADBAND_BILL`, `CREDIT_CARD_BILL`).
    - Utility bill fetching (Tata Power, Airtel Broadband) and credit card bills.
    - UPI handle format validation and VPA resolution (`rahul@okaxis`).
    - Explicit two-phase payment confirmation and ledger settlement with idempotency.
+   - Dedicated Bill Prompts: [`agents/payment/prompts.py`](agents/payment/prompts.py).
 
 8. **Support & Dispute Subgraph** ([`agents/support/nodes.py`](agents/support/nodes.py) / [`agents/support/graph.py`](agents/support/graph.py)):
+   - Driven by LLM router sub-intents (`UNAUTHORIZED_TRANSACTION`, `CREATE_TICKET`, `CARD_PAYMENT_DECLINED`, `UPI_PAYMENT_FAILED`, `FAQ`).
    - Transaction decline reason investigation (`TXN-10091` ➔ customer-friendly translation).
    - Grounded RAG search over official bank policies, interest rates, and fees.
    - Formal customer support ticket escalation.
+   - Dedicated Dispute Templates: [`agents/support/prompts.py`](agents/support/prompts.py).
 
 9. **Financial Insights & Analytics Subgraph** ([`agents/insights/nodes.py`](agents/insights/nodes.py) / [`agents/insights/graph.py`](agents/insights/graph.py)):
+   - Driven by LLM router sub-intents (`SPENDING_BREAKDOWN`, `SUBSCRIPTION_AUDIT`, `CASHFLOW_PREDICTION`).
    - Spending categorizer and analytics over 30-day and 90-day intervals.
    - Recurring subscription detection and monthly bill commitments.
    - Predictive cashflow forecasting and safety cushion verification.
+   - Dedicated Analytics Prompts: [`agents/insights/prompts.py`](agents/insights/prompts.py).
 
 10. **Master Supervisor Agent** ([`agents/supervisor/nodes.py`](agents/supervisor/nodes.py) / [`agents/supervisor/graph.py`](agents/supervisor/graph.py)):
     - Central conversational router using Groq `openai/gpt-oss-20b` routing tier with fallback.
+    - Central conversational router equipped with 8 few-shot training examples in [`gateway/llm/prompts.py`](gateway/llm/prompts.py).
     - Context interruption & pause-and-resume continuation logic (`_build_interruption_continuation`).
     - Contextual ChatGPT-style gratitude and appreciation acknowledgments.
+    - Contextual gratitude acknowledgments and ChatGPT-style fallback engine ([`agents/supervisor/prompts.py`](agents/supervisor/prompts.py)).
 
 ## Live Chat Samples
 
@@ -318,6 +343,24 @@ NovaBank Assistant:
    • Premium: ₹436/year (Auto-debited from Savings Account)
 
 [POLICY_CARD_WIDGET: Side-by-side policy cards, coverage badges, instant enrollment]
+```
+
+### Sample 11: Resilient Out-of-Domain Query & ChatGPT-Style Fallback
+```text
+User: "can you bake me a chocolate cake"
+
+NovaBank Assistant:
+Hello Amanpreet! I understand you're asking regarding *'can you bake me a chocolate cake'*, but I need a little more clarity to help you accurately.
+
+Here are some of the things I can help you with right away:
+• **Money Transfers & UPI**: Send funds, verify UPI IDs, or check/add beneficiaries
+• **Accounts & Balances**: Check account balance, view account numbers, or download official statements
+• **Cards & Limits**: Freeze/unfreeze debit/credit cards or set online transaction limits
+• **Wealth & Investments**: Plan monthly SIPs, compound growth calculators, or search live stock prices
+• **Loans & EMI**: Calculate EMI estimates or verify loan eligibility
+• **Bills & Disputes**: Pay electricity/utility bills or investigate declined transactions
+
+Could you please tell me which of these you'd like to proceed with, or rephrase your request?
 ```
 
 ---
