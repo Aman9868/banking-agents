@@ -2,11 +2,15 @@
 
 An enterprise-grade, conversational banking platform built with **LangGraph**, **FastAPI**, **PostgreSQL**, **Redis**, and **ChatGroq**.
 
+🌐 **Live Application**: [**https://banking-agents-tau.vercel.app/**](https://banking-agents-tau.vercel.app/)
+
 > **Guiding Principle**: *"Let the customer do banking through conversation, while deterministic banking systems remain the absolute source of truth."*
 
 ---
 
 ## 🖥️ NovaBank Interactive AI Chatbot UI
+
+🚀 **Live Interactive Demo**: [**banking-agents-tau.vercel.app**](https://banking-agents-tau.vercel.app/)
 
 | NovaBank Conversational Portal | Customer Persona & Guest Onboarding Switcher |
 | :---: | :---: |
@@ -21,24 +25,78 @@ The enterprise banking portal features:
 
 ## 💬 Live Chat Samples & Multi-Agent Interactions
 
-### 1. Conversational KYC & Instant Savings Account Opening
+### 1. Conversational Retail Savings Account Opening (Aadhaar OCR & Live Biometric KYC)
 ```markdown
 👤 User: I want to open a new savings account with NovaBank
 🤖 Assistant: Absolutely! I can help you open a new bank account. May I have your full name?
-👤 User: rajuu
-🤖 Assistant: Thanks, Raju. What is your date of birth?
-👤 User: 07-10-1997
+👤 User: Amanpreet Singh
+🤖 Assistant: Thanks, Amanpreet Singh. What is your date of birth?
+👤 User: 14/08/1996
 🤖 Assistant: What email address would you like to use for your account?
-👤 User: raju@example.com
-🤖 Assistant: Congratulations Raju! Your KYC is complete. Your SAVINGS account SB64237377 has been successfully opened.
+👤 User: amanpreet@example.com
+🤖 Assistant: Now let's complete your official Identity Verification (KYC).
+Please provide your 12-digit Aadhaar Number or upload a photo/PDF of your Aadhaar card below.
+
+[AADHAAR_UPLOAD_WIDGET: Secure 12-digit Verhoeff Checksum OCR Scanner & PII Masking]
+
+👤 User: 5482 9102 7382
+🤖 Assistant: Aadhaar verified successfully (••••-••••-7382)! ✅ 
+The final step is a quick Live Video / Biometric KYC to confirm facial liveness and blink verification.
+
+[LIVE_FACE_KYC_WIDGET: 3-Second Camera Liveness, Blink Detection & Aadhaar Face Match]
+
+👤 User: verified
+🤖 Assistant: 🎉 Congratulations Amanpreet! Your biometric KYC and AML compliance check are complete.
+Your SAVINGS account SB64237377 has been successfully opened!
 
 ┌─────────────────────────────────────────────────────────────┐
 │  NovaBank Digital Account Passbook                          │
-│  ACTIVE & KYC VERIFIED                                      │
-│  Account Number: SB64237377        Account Holder: Raju     │
-│  Customer ID:    CUST-8536         Account Type:   SAVINGS  │
-│  IFSC Code:      NOVA0001001       Branch: Digital Branch   │
-│  Balance:        ₹0.00                                      │
+│  ACTIVE & KYC VERIFIED (BIOMETRIC CONFIRMED)                │
+│  Account Number: SB64237377        Holder: Amanpreet Singh │
+│  Customer ID:    CUST-8536         Type:   SAVINGS          │
+│  Aadhaar Ref:    ••••-••••-7382    Branch: Digital Branch   │
+│  IFSC Code:      NOVA0001001       Balance: ₹0.00           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 1b. Commercial Current Account Opening (Business Entity & 15-Digit GSTIN Verification)
+```markdown
+👤 User: I need to open a current account for my company
+🤖 Assistant: Absolutely! I can help you open a NovaBank Current Account. May I have your full legal name as the authorized director?
+👤 User: Amanpreet Singh
+🤖 Assistant: Thanks, Amanpreet Singh. What is your date of birth?
+👤 User: 14/08/1996
+🤖 Assistant: What official email address should be linked to this business account?
+👤 User: director@acmetech.com
+🤖 Assistant: Thank you! To open a NovaBank Current Account, please share your registered Company or Business Name.
+👤 User: Acme Tech Solutions Private Limited
+🤖 Assistant: Please provide your 15-character GSTIN (Goods & Services Tax Number) or upload your Form GST REG-06 registration certificate for Acme Tech Solutions Private Limited.
+
+[GST_VERIFY_WIDGET: Real-Time GSTIN Format Validator & Ministry of Corporate Affairs Registry]
+
+👤 User: 07AABCB1234D1Z8
+🤖 Assistant: GSTIN 07AABCB1234D1Z8 verified successfully! ✅
+Entity: Private Limited Company | State: Delhi (07) | Status: Active.
+Next, please enter the authorized director's 12-digit Aadhaar Number below.
+
+[AADHAAR_UPLOAD_WIDGET: Director Aadhaar Verification]
+
+👤 User: 5482 9102 7382
+🤖 Assistant: Director Aadhaar verified (••••-••••-7382)! Now activating 3-second live face match.
+
+[LIVE_FACE_KYC_WIDGET: Director Facial Liveness & Biometric Verification]
+
+👤 User: verified
+🤖 Assistant: 🎉 Congratulations Amanpreet! Acme Tech Solutions Private Limited is fully onboarded.
+Your CURRENT account CA91028374 is active with commercial net banking and corporate overdraft limits!
+
+┌─────────────────────────────────────────────────────────────┐
+│  NovaBank Corporate Current Account Passbook                │
+│  ACTIVE & ENTERPRISE KYC VERIFIED                           │
+│  Account Number: CA91028374        Company: Acme Tech Sol.  │
+│  Authorized Rep: Amanpreet Singh   Type:   CURRENT (CORP)   │
+│  GSTIN:          07AABCB1234D1Z8   Branch: Commercial Hub   │
+│  Overdraft Cap:  ₹500,000.00       Balance: ₹0.00           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -200,13 +258,10 @@ Below is the complete multi-agent execution graph across all 7 autonomous subgra
 
 ## 🏗️ Production Multi-Agent LangGraph Architecture
 
-Every domain agent in NovaBank follows a clean, modular architecture segregating **node functions** from **graph definitions**:
-- **`nodes.py`**: Pure functional node logic, tool executions, LLM prompts/personas, and state mutations.
 Every domain agent in NovaBank follows a clean, decoupled architecture segregating **prompts**, **node functions**, and **graph topologies**:
 - **`prompts.py`**: Clean, segregated prompt templates, system instructions, few-shot training examples, and response formatters (zero hardcoded prompt strings in logic nodes).
 - **`nodes.py`**: Pure functional node logic, tool executions, and state mutations driven directly by LLM router sub-intents (no brittle keyword matching).
 - **`graph.py`**: StateGraph definitions, routing functions, fan-out/fan-in topology, and compilation.
-- **`__init__.py`**: Public module interface exporting both compiled subgraphs and node functions.
 - **`__init__.py`**: Public module interface exporting compiled subgraphs, nodes, and prompts.
 
 ### 🛡️ ChatGPT-Style Conversational Fallback & Resilient Recovery Engine
@@ -220,7 +275,6 @@ Every domain agent in NovaBank follows a clean, decoupled architecture segregati
    - Tailored micro-SIP asset allocations (Nifty 50 Index Funds, Flexi-Caps, Liquid Buffers).
    - 100% Free Web Market Search and Yahoo Finance live stock quotes (zero API keys).
    - Dynamic interactive `SIP_PLANNER_WIDGET` and `STOCK_MARKET_WIDGET`.
-   - Dedicated LLM System Prompt: [`agents/wealth/prompts.py`](agents/wealth/prompts.py).
    - Dedicated LLM System Prompts & Formatters: [`agents/wealth/prompts.py`](agents/wealth/prompts.py).
 
 2. **Insurance & Policy Advisory Subgraph** ([`agents/policy/nodes.py`](agents/policy/nodes.py) / [`agents/policy/graph.py`](agents/policy/graph.py)):
@@ -228,7 +282,6 @@ Every domain agent in NovaBank follows a clean, decoupled architecture segregati
    - Life Insurance & Govt Social Security schemes (Pure Term Life, PMJJBY @ ₹436/yr, PMSBY @ ₹20/yr).
    - Sovereign wealth schemes (PPF @ 7.10% EEE, NPS Tier-1 & 2, APY guaranteed lifelong pension).
    - Dynamic `POLICY_CARD_WIDGET` with side-by-side comparisons and tax deductions (Section 80C & 80D).
-   - Dedicated LLM System Prompt: [`agents/policy/prompts.py`](agents/policy/prompts.py).
    - Dedicated LLM System Prompts: [`agents/policy/prompts.py`](agents/policy/prompts.py).
 
 3. **Controlled Money Transfer Subgraph** ([`agents/transfer/nodes.py`](agents/transfer/nodes.py) / [`agents/transfer/graph.py`](agents/transfer/graph.py)):
@@ -239,17 +292,24 @@ Every domain agent in NovaBank follows a clean, decoupled architecture segregati
    - Dedicated Slot Extraction Prompts: [`agents/transfer/prompts.py`](agents/transfer/prompts.py).
 
 4. **Account Opening Subgraph** ([`agents/account/nodes.py`](agents/account/nodes.py) / [`agents/account/graph.py`](agents/account/graph.py)):
-   - Multi-turn conversational slot filling (`name` ➔ `dob` ➔ `email` ➔ `account_type`).
-   - Verhoeff checksum algorithm for Aadhaar validation and GSTIN regex verification.
-   - Biometric liveness verification and digital KYC.
-   - KYC validation and AML watchlist screening with compliance officer `interrupt()` pause.
+   - **Dual Onboarding Lifecycles**: Dedicated, compliance-controlled state machines for **Retail Savings Accounts** vs **Commercial Current Accounts**:
+     - **Retail Savings Account Lifecycle**:
+       - Multi-turn conversational slot collection (`name` ➔ `dob` (18+ verification) ➔ `email`).
+       - **12-Digit Aadhaar Card Verification**: Verhoeff mathematical checksum algorithm, OCR name match, and PII masking (`••••-••••-7382`) via `AADHAAR_UPLOAD_WIDGET`.
+       - **Live Biometric Video & Blink Liveness KYC**: Real-time facial similarity matching and Eye Aspect Ratio (EAR) blink detection to prevent static screen/photo spoofing via `LIVE_FACE_KYC_WIDGET`.
+       - Real-time AML watchlist / PEP screening (sanctioned flags trigger human compliance officer `interrupt()` pause).
+       - Instant Core Banking digital passbook issuance (`SB••••`).
+     - **Commercial Current Account Lifecycle (Business / Enterprise)**:
+       - Authorized Director identification (`name`, `dob`, `email`).
+       - Registered Business Name & Legal Entity classification (Private Limited, Partnership/LLP, Sole Proprietorship).
+       - **15-Character GSTIN Verification**: Format validation (`07AABCB1234D1Z8`), state jurisdiction code validation, and Form GST REG-06 certificate verification via `GST_VERIFY_WIDGET`.
+       - Authorized Director Aadhaar verification and facial liveness biometric KYC.
+       - Corporate account issuance with commercial overdraft limits (`CA••••`).
    - Dedicated Onboarding Prompts: [`agents/account/prompts.py`](agents/account/prompts.py).
 
 5. **Cards Operations & Security Subgraph** ([`agents/card/nodes.py`](agents/card/nodes.py) / [`agents/card/graph.py`](agents/card/graph.py)):
    - Driven directly by LLM router sub-intents (`FREEZE_CARD`, `UNFREEZE_CARD`, `REPLACE_CARD`, `SET_LIMIT`, `CARD_STATUS`).
    - Emergency freeze (`"Freeze my debit card"`, `"My card was stolen"`).
-   - Unfreeze card (`"Unfreeze my card"`).
-   - Configure online/ATM daily spending limits.
    - Unfreeze card and configure online/ATM daily spending limits.
    - Replace lost/stolen card with instant blocking and new card dispatch.
    - Dedicated Response Formatters: [`agents/card/prompts.py`](agents/card/prompts.py).
@@ -283,10 +343,8 @@ Every domain agent in NovaBank follows a clean, decoupled architecture segregati
    - Dedicated Analytics Prompts: [`agents/insights/prompts.py`](agents/insights/prompts.py).
 
 10. **Master Supervisor Agent** ([`agents/supervisor/nodes.py`](agents/supervisor/nodes.py) / [`agents/supervisor/graph.py`](agents/supervisor/graph.py)):
-    - Central conversational router using Groq `openai/gpt-oss-20b` routing tier with fallback.
     - Central conversational router equipped with 8 few-shot training examples in [`gateway/llm/prompts.py`](gateway/llm/prompts.py).
     - Context interruption & pause-and-resume continuation logic (`_build_interruption_continuation`).
-    - Contextual ChatGPT-style gratitude and appreciation acknowledgments.
     - Contextual gratitude acknowledgments and ChatGPT-style fallback engine ([`agents/supervisor/prompts.py`](agents/supervisor/prompts.py)).
 
 ## Live Chat Samples
@@ -415,7 +473,8 @@ python scripts/evaluate_langsmith.py
 ```bash
 uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-- Interactive Banking Chat UI: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Live Production App (Vercel)**: [**https://banking-agents-tau.vercel.app/**](https://banking-agents-tau.vercel.app/)
+- Local Banking Chat UI: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 - Interactive API Documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - LangSmith Observability Dashboard: [https://smith.langchain.com/](https://smith.langchain.com/) (Project: `novabank-agent-prod`)
 
