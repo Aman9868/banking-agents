@@ -2,7 +2,11 @@
 
 from agents.wealth.nodes import wealth_advisor_node
 from agents.wealth.graph import wealth_graph_builder, wealth_subgraph
-from agents.wealth.prompts import WEALTH_ADVISOR_SYSTEM_PROMPT, STUDENT_SIP_RECOMMENDATION_PROMPT
+from agents.wealth.prompts import (
+    WEALTH_ADVISOR_SYSTEM_PROMPT,
+    STUDENT_SIP_RECOMMENDATION_PROMPT,
+    GENERAL_SIP_RECOMMENDATION_PROMPT,
+)
 
 __all__ = [
     "wealth_advisor_node",
@@ -10,4 +14,5 @@ __all__ = [
     "wealth_subgraph",
     "WEALTH_ADVISOR_SYSTEM_PROMPT",
     "STUDENT_SIP_RECOMMENDATION_PROMPT",
+    "GENERAL_SIP_RECOMMENDATION_PROMPT",
 ]

@@ -227,22 +227,74 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
             "customer_memory": memory
         }
 
-    # 1. Informational Interruption: Balance Check
+    # 1. Informational Interruption: Balance Check & Multi-Account Portfolio
     if intent == "BALANCE_CHECK":
+        widget_type = None
+        widget_data = None
         async with AsyncSessionLocal() as session:
             repo = BankingRepository(session)
-            bal_res = await tool_gateway.execute_tool(
+            acc_res = await tool_gateway.execute_tool(
                 agent_role=AgentRole.SUPERVISOR.value,
-                tool_name="get_balance",
+                tool_name="get_accounts",
                 repo=repo,
                 customer_id=customer_id,
                 parameters={}
             )
 
-        if bal_res.success:
-            masked = bal_res.data["masked_account"]
-            bal = bal_res.data["balance"]
-            balance_msg = f"Your current balance for {bal_res.data['account_type'].capitalize()} account {masked} is ₹{bal:,.2f}."
+        if acc_res.success and acc_res.data and acc_res.data.get("accounts"):
+            accounts = acc_res.data["accounts"]
+            active_accs = [a for a in accounts if a.get("status") == "ACTIVE"] or accounts
+            total_bal = sum(float(a.get("balance", 0.0)) for a in active_accs)
+
+            is_list_query = (
+                sub_intent == "LIST_ACCOUNTS"
+                or any(k in last_msg.lower() for k in [
+                    "how many", "list", "show", "which", "portfolio", "all accounts", "all my accounts", "my accounts", "acocunt"
+                ])
+            )
+
+            if is_list_query or len(accounts) > 1:
+                acc_bullets = []
+                for i, a in enumerate(accounts, 1):
+                    type_str = a.get("account_type", "SAVINGS").capitalize()
+                    masked = a.get("masked_account", "••••")
+                    bal = float(a.get("balance", 0.0))
+                    status = a.get("status", "ACTIVE")
+                    acc_bullets.append(
+                        f"{i}. **{type_str} Account** (`{masked}`)\n"
+                        f"   • **Available Balance**: ₹{bal:,.2f}\n"
+                        f"   • **Status**: {status} {'✅' if status == 'ACTIVE' else '⚠️'}"
+                    )
+                bullet_str = "\n".join(acc_bullets)
+                count_str = f"**{len(accounts)} registered account{'s' if len(accounts) > 1 else ''}**"
+
+                if is_list_query:
+                    balance_msg = (
+                        f"You currently have {count_str} with NovaBank:\n\n"
+                        f"{bullet_str}\n\n"
+                        f"💰 **Total Net Worth / Combined Balance**: **₹{total_bal:,.2f}**\n\n"
+                        "💡 *You can transfer funds, pay bills, or download statements from any of these accounts.*"
+                    )
+                else:
+                    # User asked for balance but has multiple accounts
+                    balance_msg = (
+                        f"You have {count_str} with NovaBank with a **Total Consolidated Balance** of **₹{total_bal:,.2f}**:\n\n"
+                        f"{bullet_str}\n\n"
+                        "Which account would you like to use for your next transaction?"
+                    )
+
+                widget_type = "ACCOUNTS_PORTFOLIO_WIDGET"
+                widget_data = {
+                    "accounts": accounts,
+                    "total_balance": total_bal,
+                    "account_count": len(accounts)
+                }
+            else:
+                target = accounts[0]
+                masked = target.get("masked_account")
+                bal = float(target.get("balance", 0.0))
+                type_str = target.get("account_type", "SAVINGS").capitalize()
+                balance_msg = f"Your current balance for {type_str} account {masked} is **₹{bal:,.2f}**."
         else:
             balance_msg = "You currently do not have an active account with a balance."
 
@@ -250,12 +302,13 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         full_resp, next_wf, extra_state = _build_interruption_continuation(balance_msg, active_wf, state)
         out = {
             "current_intent": intent,
+            "current_sub_intent": sub_intent or "LIST_ACCOUNTS",
             "active_workflow": next_wf,
             "final_response": full_resp,
             "messages": [AIMessage(content=full_resp)],
             "customer_memory": memory,
-            "widget_type": None,
-            "widget_data": None
+            "widget_type": widget_type,
+            "widget_data": widget_data
         }
         out.update(extra_state)
         return out
@@ -484,24 +537,49 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         out.update(extra_state)
         return out
 
-    # 2. Informational Interruption: Knowledge Base RAG
-
+    # 2. Informational Interruption: Knowledge Base RAG & Live Web Search
     if intent == "KNOWLEDGE_FAQ":
         async with AsyncSessionLocal() as session:
             repo = BankingRepository(session)
-            rag_res = await tool_gateway.execute_tool(
-                agent_role=AgentRole.SUPERVISOR.value,
-                tool_name="search_knowledge_base",
-                repo=repo,
-                customer_id=customer_id,
-                parameters={"query": last_msg, "limit": 2}
-            )
-        if rag_res.success and rag_res.data.get("results"):
-            articles = rag_res.data["results"]
-            rag_summary = "\n\n".join([f"• **{a['title']}**: {a['content']}" for a in articles])
+            articles = []
+            if sub_intent != "WEB_SEARCH":
+                rag_res = await tool_gateway.execute_tool(
+                    agent_role=AgentRole.SUPERVISOR.value,
+                    tool_name="search_knowledge_base",
+                    repo=repo,
+                    customer_id=customer_id,
+                    parameters={"query": last_msg, "limit": 2}
+                )
+                if rag_res.success and rag_res.data.get("results"):
+                    articles = rag_res.data["results"]
+
+            if articles:
+                rag_summary = "\n\n".join([f"• **{a['title']}**: {a['content']}" for a in articles])
+            else:
+                # Production Live Web Search & Regulatory Benchmark
+                web_res = await tool_gateway.execute_tool(
+                    agent_role=AgentRole.SUPERVISOR.value,
+                    tool_name="search_web_banking",
+                    repo=repo,
+                    customer_id=customer_id,
+                    parameters={"query": last_msg, "max_results": 3}
+                )
+                if web_res.success and web_res.data.get("results"):
+                    w_results = web_res.data["results"]
+                    items = []
+                    for r in w_results:
+                        items.append(
+                            f"🌐 **[{r['title']}]({r['url']})** *({r['source']})*\n"
+                            f"{r['snippet']}"
+                        )
+                    rag_summary = "Here are the latest verified search findings:\n\n" + "\n\n".join(items)
+                else:
+                    rag_summary = "I could not find specific policy or web documentation regarding that topic. Please let me know if you would like me to connect you with a representative."
+
             full_resp, next_wf, extra_state = _build_interruption_continuation(rag_summary, active_wf, state)
             out = {
                 "current_intent": intent,
+                "current_sub_intent": sub_intent or "FAQ",
                 "active_workflow": next_wf,
                 "final_response": full_resp,
                 "messages": [AIMessage(content=full_resp)],
@@ -855,8 +933,8 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
     default_msg = (
         f"Hello {cust_display_name}! I am your AI Banking Assistant. I can assist you with:\n"
         "• Transfers & Beneficiaries: Send money, UPI payments, balance checks\n"
-        "• Wealth & Investments: Student SIP planner, compounding calculators, live stock market search\n"
-        "• Insurance & Policies: Student health shield, pure term life, PMJJBY, PMSBY, PPF & NPS\n"
+        "• Wealth & Investments: Systematic SIP planner, compounding calculators, live stock market search\n"
+        "• Insurance & Policies: Health shields, pure term life, PMJJBY, PMSBY, PPF & NPS\n"
         "• Statements & Ledgers: Official PDF statements with running balances & decline diagnosis\n"
         "• Cards Management: Instant freeze/unfreeze, report lost card, set limits\n"
         "• Loans & Advisory: EMI calculators, loan eligibility, application submission\n"

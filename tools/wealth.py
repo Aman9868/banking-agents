@@ -10,7 +10,7 @@ async def calculate_sip_tool(
     monthly_investment: float,
     tenure_years: int = 5,
     annual_expected_cagr: float = 12.0,
-    user_persona: str = "STUDENT",
+    user_persona: str = "GENERAL",
     risk_profile: str = "MODERATE"
 ) -> ToolResult:
     """Calculates compound SIP growth and provides personalized portfolio allocation."""
@@ -39,7 +39,7 @@ async def calculate_sip_tool(
 
 async def recommend_portfolio_tool(
     monthly_amount: float,
-    user_persona: str = "STUDENT",
+    user_persona: str = "GENERAL",
     risk_profile: str = "MODERATE"
 ) -> ToolResult:
     """Generates a personalized investment allocation plan based on customer persona."""

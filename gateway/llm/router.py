@@ -87,6 +87,8 @@ class BankingSubIntent(str, Enum):
     SAVINGS_ACCOUNT_OPENING = "SAVINGS_ACCOUNT_OPENING"
     CURRENT_ACCOUNT_OPENING = "CURRENT_ACCOUNT_OPENING"
     KYC_STATUS = "KYC_STATUS"
+    LIST_ACCOUNTS = "LIST_ACCOUNTS"
+    WEB_SEARCH = "WEB_SEARCH"
 
 
     # PFM Analytics
@@ -388,6 +390,33 @@ async def route_banking_request(
             cleaned_message=raw_text
         )
 
+    # Fast multi-account / list accounts inquiry check (e.g. "how many account i ahve", "my accounts")
+    acc_list_triggers = [
+        "how many account", "how many accounts", "how many acc", "how many accs",
+        "how many account i have", "how many accounts i have", "how many account i ahve", "how many accounts do i have",
+        "how many account do i have", "how many accounts do i got", "how many acc i have",
+        "list my account", "list my accounts", "list accounts", "list account",
+        "show my accounts", "show my account", "show accounts", "show account",
+        "what accounts do i have", "what account do i have", "what are my accounts", "which accounts do i have",
+        "my accounts", "all my accounts", "all accounts", "my account list",
+        "account portfolio", "portfolio of accounts", "account summary", "view my accounts", "view accounts"
+    ]
+    is_acc_keyword = any(w in clean_text for w in ["account", "accounts", "acocunt", "acocunts", "acc", "accs"])
+    is_count_or_list_keyword = any(w in clean_text for w in ["how many", "list", "show", "what", "which", "tell", "view", "all my", "all"])
+    if (
+        any(q in clean_text for q in acc_list_triggers)
+        or clean_text in ["accounts", "my accounts", "my accs", "acc list", "account list"]
+        or (is_acc_keyword and is_count_or_list_keyword and not any(k in clean_text for k in ["open", "create", "new", "apply", "register", "transfer", "send"]))
+    ):
+        return BankingRoutingDecision(
+            intent=BankingIntent.BALANCE_CHECK,
+            sub_intent=BankingSubIntent.LIST_ACCOUNTS,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning="Direct user inquiry to list registered bank accounts and total portfolio balance.",
+            cleaned_message=raw_text
+        )
+
     # Fast balance query check (Interruption-safe before contextual steps)
     bal_triggers = [
         "what is my balance", "what's my balance", "check balance", "current balance",
@@ -401,6 +430,22 @@ async def route_banking_request(
             confidence=1.0,
             negation_detected=False,
             reasoning="Direct user inquiry for account balance.",
+            cleaned_message=raw_text
+        )
+
+    # Fast Web / Financial Search check
+    web_search_triggers = [
+        "search web for", "search web", "web search", "google search", "search internet",
+        "latest rbi repo rate", "rbi repo rate", "current repo rate", "repo rate",
+        "dicgc insurance limit", "section 80ccd limit", "upi daily limit"
+    ]
+    if any(q in clean_text for q in web_search_triggers) or (clean_text.startswith("search ") and not any(w in clean_text for w in ["statement", "transaction", "faq", "ticket"])):
+        return BankingRoutingDecision(
+            intent=BankingIntent.KNOWLEDGE_FAQ,
+            sub_intent=BankingSubIntent.WEB_SEARCH,
+            confidence=1.0,
+            negation_detected=False,
+            reasoning="User inquiry requesting live web or regulatory financial search.",
             cleaned_message=raw_text
         )
 
@@ -649,6 +694,10 @@ CRITICAL RULES:
 
 5. TRANSFER TRACKING & TRANSACTION INQUIRY:
    Queries asking about past transfers, latest transferred amount, transaction history, or tracking a transfer (e.g. 'what was my last transfer', 'latest amount transferred', 'status of transfer') -> TRANSACTION_INQUIRY.
+
+6. MULTI-ACCOUNT & BALANCE QUERIES:
+   Queries asking about how many accounts the user has, listing accounts, or portfolio summary -> BALANCE_CHECK with sub_intent LIST_ACCOUNTS.
+   Queries asking for live web search or external banking/economic/RBI questions -> KNOWLEDGE_FAQ with sub_intent WEB_SEARCH.
 
 Allowed Intents:
 TRANSFER_MONEY, OPEN_ACCOUNT, BALANCE_CHECK, TRANSACTION_INQUIRY, STATEMENT_REQUEST, CARD_ACTION, LOAN_ACTION, PAYMENT_ACTION,

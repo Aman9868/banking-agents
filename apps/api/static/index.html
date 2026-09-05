@@ -8,6 +8,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Marked.js for GFM Markdown Rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -188,6 +190,22 @@
               <span>Account Inquiry</span>
             </div>
             <div class="text-sm text-gray-300 font-medium">"What is my current balance?"</div>
+          </button>
+
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="How many accounts do I have?">
+            <div class="flex items-center gap-2 text-teal-400 text-xs font-semibold">
+              <i data-lucide="layers" class="w-4 h-4"></i>
+              <span>Accounts Portfolio</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"How many accounts do I have?"</div>
+          </button>
+
+          <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="Search web for latest RBI repo rate and guidelines">
+            <div class="flex items-center gap-2 text-cyan-400 text-xs font-semibold">
+              <i data-lucide="globe" class="w-4 h-4"></i>
+              <span>Web & Regulatory Search</span>
+            </div>
+            <div class="text-sm text-gray-300 font-medium">"Search web for latest RBI repo rate"</div>
           </button>
 
           <button class="prompt-chip p-3 rounded-xl bg-inputbg hover:bg-[#3a3a3a] border border-bordercol transition flex flex-col gap-1 group" data-prompt="Transfer ₹5,000 to Rahul">
@@ -1032,6 +1050,73 @@
               </button>
             </div>
           `;
+        } else if (widgetType === "ACCOUNTS_PORTFOLIO_WIDGET" && widgetData) {
+          const accList = widgetData.accounts || [];
+          const totalBal = Number(widgetData.total_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
+          const cardsHtml = accList.map((acc, idx) => {
+            const isCurrent = (acc.account_type || '').toUpperCase() === 'CURRENT';
+            const badgeBg = isCurrent ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+            const accIcon = isCurrent ? 'briefcase' : 'wallet';
+            const balFormatted = Number(acc.balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
+            const accNum = acc.masked_account || acc.account_number;
+            return `
+              <div class="p-3 bg-[#1e1e1e] rounded-xl border border-bordercol/60 flex flex-col gap-2 hover:border-emerald-500/40 transition">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5 text-xs font-semibold text-white">
+                    <i data-lucide="${accIcon}" class="w-3.5 h-3.5 ${isCurrent ? 'text-amber-400' : 'text-emerald-400'}"></i>
+                    <span>${acc.account_type} ACCOUNT</span>
+                  </div>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full border ${badgeBg} font-mono font-bold">${acc.status}</span>
+                </div>
+                <div class="flex items-baseline justify-between pt-1">
+                  <div>
+                    <div class="text-[10px] text-gray-400 font-sans uppercase">Account No</div>
+                    <div class="font-mono text-xs font-bold text-gray-200">${accNum}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-[10px] text-gray-400 font-sans uppercase">Available Balance</div>
+                    <div class="font-mono text-sm font-bold text-emerald-400">₹${balFormatted}</div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-end gap-1.5 pt-1.5 border-t border-bordercol/30">
+                  <button type="button" class="py-1 px-2.5 bg-[#282828] hover:bg-[#333] text-gray-300 rounded-lg text-[11px] font-medium transition prompt-chip-btn" data-prompt="Transfer money from my ${acc.account_type} account">
+                    Transfer
+                  </button>
+                  <button type="button" class="py-1 px-2.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 rounded-lg text-[11px] font-medium transition prompt-chip-btn" data-prompt="Download statement for ${acc.account_type} account">
+                    Statement
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-[#0c2419]/90 via-[#181818] to-[#121212] border border-emerald-500/40 flex flex-col gap-3.5 shadow-xl accounts-portfolio-widget">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2.5">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                  <i data-lucide="landmark" class="w-4 h-4"></i>
+                  <span>NovaBank Accounts Portfolio</span>
+                </div>
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono font-bold">${accList.length} ACCOUNTS</span>
+              </div>
+
+              <!-- Total Consolidated Balance Banner -->
+              <div class="p-3.5 bg-emerald-950/50 rounded-xl border border-emerald-500/30 flex items-center justify-between">
+                <div>
+                  <div class="text-[10px] uppercase text-emerald-300/80 font-sans tracking-wider font-semibold">Total Combined Net Worth</div>
+                  <div class="text-xl font-bold font-mono text-white mt-0.5">₹${totalBal}</div>
+                </div>
+                <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/30">
+                  <i data-lucide="coins" class="w-5 h-5"></i>
+                </div>
+              </div>
+
+              <!-- Account Cards Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                ${cardsHtml}
+              </div>
+            </div>
+          `;
         } else if (widgetType === "ACCOUNT_CARD" && widgetData) {
           const isCurrent = (widgetData.account_type || '').toUpperCase() === 'CURRENT';
           const cardBorder = isCurrent ? 'border-amber-500/40 bg-gradient-to-br from-amber-950/60 via-[#181818] to-[#121212]' : 'border-emerald-500/40 bg-gradient-to-br from-emerald-950/70 via-[#181818] to-[#121212]';
@@ -1260,13 +1345,149 @@
               </div>
             </div>
           `;
+        } else if (widgetType === "SIP_PLANNER_WIDGET" && widgetData) {
+          const calc = widgetData.calculation || {};
+          const strategy = widgetData.strategy || {};
+          const monthlyAmt = Number(widgetData.monthly_investment || 5000);
+          const totalInv = Number(calc.total_invested || (monthlyAmt * 60)).toLocaleString('en-IN', {maximumFractionDigits: 0});
+          const futureVal = Number(calc.future_value || (monthlyAmt * 82.48)).toLocaleString('en-IN', {maximumFractionDigits: 0});
+          const gain = Number(calc.estimated_gain || ((calc.future_value || 0) - (calc.total_invested || 0))).toLocaleString('en-IN', {maximumFractionDigits: 0});
+          const multiplier = calc.growth_multiplier || 1.37;
+          const allocations = strategy.allocations || [];
+
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-[#0c2419]/90 via-[#181818] to-[#121212] border border-emerald-500/40 flex flex-col gap-3.5 shadow-xl sip-widget" data-cagr="12">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2.5">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                  <i data-lucide="trending-up" class="w-4 h-4"></i>
+                  <span>NovaBank SIP Compounding & Wealth Portfolio</span>
+                </div>
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono font-bold">${(widgetData.persona || 'GENERAL').toUpperCase()} • 12% CAGR</span>
+              </div>
+
+              <!-- 3-Box Financial Projection Cards -->
+              <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="p-2.5 bg-black/40 rounded-xl border border-bordercol/40">
+                  <div class="text-[9px] text-gray-400 uppercase tracking-wider">Total Principal</div>
+                  <div class="text-xs sm:text-sm font-bold text-gray-200 font-mono mt-0.5 total-inv-display">₹${totalInv}</div>
+                </div>
+                <div class="p-2.5 bg-emerald-950/40 rounded-xl border border-emerald-500/30">
+                  <div class="text-[9px] text-emerald-400 uppercase tracking-wider">Projected Maturity</div>
+                  <div class="text-xs sm:text-sm font-bold text-emerald-400 font-mono mt-0.5 future-val-display">₹${futureVal}</div>
+                </div>
+                <div class="p-2.5 bg-black/40 rounded-xl border border-bordercol/40">
+                  <div class="text-[9px] text-gray-400 uppercase tracking-wider">Wealth Gain</div>
+                  <div class="text-xs sm:text-sm font-bold text-emerald-300 font-mono mt-0.5 gain-display">+₹${gain} (${multiplier}x)</div>
+                </div>
+              </div>
+
+              <!-- Interactive Monthly Contribution Slider -->
+              <div class="space-y-1.5 p-3 bg-[#171717] rounded-xl border border-bordercol/40">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-gray-400">Monthly Contribution:</span>
+                  <span class="font-bold text-white font-mono sip-amt-display">₹${monthlyAmt.toLocaleString('en-IN')}/mo</span>
+                </div>
+                <input type="range" min="1000" max="100000" step="500" value="${monthlyAmt}" class="w-full accent-emerald-500 bg-[#2f2f2f] rounded h-1.5 cursor-pointer sip-slider">
+                <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+                  <span>₹1,000/mo</span>
+                  <span>5-Year Horizon (60 Mos)</span>
+                  <span>₹1,00,000/mo</span>
+                </div>
+              </div>
+
+              <!-- Asset Allocation Native Table -->
+              ${allocations.length > 0 ? `
+              <div class="space-y-1.5">
+                <div class="text-[11px] font-semibold text-gray-300 flex items-center justify-between">
+                  <span>Core-Satellite Portfolio Breakdown</span>
+                  <span class="text-[10px] text-gray-500">Zero-Commission Direct Plans</span>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-bordercol/80 bg-[#161616]">
+                  <table class="w-full text-left text-xs border-collapse min-w-[320px]">
+                    <thead class="bg-[#242424] text-emerald-400 text-[11px] uppercase tracking-wider border-b border-bordercol">
+                      <tr>
+                        <th class="py-2.5 px-3 whitespace-nowrap">Category</th>
+                        <th class="py-2.5 px-3 whitespace-nowrap">Share</th>
+                        <th class="py-2.5 px-3 whitespace-nowrap text-right">Monthly</th>
+                        <th class="py-2.5 px-3">Top Direct Funds</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-bordercol/30 text-gray-200 allocation-tbody">
+                      ${allocations.map(a => `
+                        <tr class="hover:bg-white/[0.03] transition">
+                          <td class="py-2 px-3 font-medium text-white">${a.category}</td>
+                          <td class="py-2 px-3 font-mono text-emerald-400">${a.percentage}%</td>
+                          <td class="py-2 px-3 font-mono text-right text-gray-200">₹${Number(a.amount).toLocaleString('en-IN')}</td>
+                          <td class="py-2 px-3 text-[11px] text-gray-300">${(a.recommended_funds || []).join(', ')}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              ` : ''}
+
+              <!-- Action Buttons -->
+              <div class="flex items-center justify-between gap-2 pt-1">
+                <div class="text-[10px] text-gray-500 italic">*Subject to market risk. Projections assume ~12% historical CAGR.</div>
+                <button type="button" class="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-lg prompt-chip-btn activate-sip-btn" data-prompt="Set up automated monthly SIP mandate of ₹${monthlyAmt.toLocaleString('en-IN')}">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                  <span>Activate SIP Mandate</span>
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (widgetType === "STOCK_MARKET_WIDGET" && widgetData) {
+          const quote = widgetData.quote || {};
+          const webRes = widgetData.web_results || [];
+          const price = Number(quote.current_price || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
+          const change = Number(quote.change || 0);
+          const isPos = change >= 0;
+          const badgeBg = isPos ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+
+          widgetHtml = `
+            <div class="mt-4 p-4 rounded-2xl bg-[#161616] border border-bordercol/80 flex flex-col gap-3.5 shadow-xl stock-widget">
+              <div class="flex items-center justify-between border-b border-bordercol/60 pb-2.5">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                  <i data-lucide="candlestick-chart" class="w-4 h-4"></i>
+                  <span>Live Market Quote & Financial Intelligence</span>
+                </div>
+                <span class="text-[10px] bg-[#222] text-gray-300 px-2 py-0.5 rounded-full border border-bordercol font-mono">${quote.symbol || 'NSE/BSE'}</span>
+              </div>
+
+              <div class="p-3 bg-black/40 rounded-xl border border-bordercol/40 flex items-center justify-between">
+                <div>
+                  <div class="text-sm font-bold text-white">${quote.company_name || quote.symbol || 'Stock Quote'}</div>
+                  <div class="text-[10px] text-gray-400 font-mono">NSE • Real-Time</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xl font-bold font-mono text-white">₹${price}</div>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full border ${badgeBg} font-mono font-semibold">${isPos ? '+' : ''}${change.toFixed(2)} (${(quote.change_percent || 0).toFixed(2)}%)</span>
+                </div>
+              </div>
+
+              ${webRes.length > 0 ? `
+              <div class="space-y-1.5 pt-1">
+                <div class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Web Market Intelligence</div>
+                <div class="space-y-1.5">
+                  ${webRes.slice(0, 2).map(w => `
+                    <div class="p-2.5 rounded-lg bg-[#1e1e1e] border border-bordercol/40 text-xs">
+                      <a href="${w.url}" target="_blank" class="font-semibold text-emerald-400 hover:underline block truncate">${w.title} ↗</a>
+                      <p class="text-[11px] text-gray-400 mt-0.5 line-clamp-2">${w.snippet}</p>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              ` : ''}
+            </div>
+          `;
         }
 
         msgDiv.innerHTML = `
           <div class="w-8 h-8 rounded-full bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
             <i data-lucide="bot" class="w-4 h-4"></i>
           </div>
-          <div class="flex-1 max-w-2xl bg-inputbg/50 border border-bordercol px-4 py-3 rounded-2xl rounded-tl-none text-sm text-gray-200 leading-relaxed shadow">
+          <div class="flex-1 max-w-3xl bg-inputbg/50 border border-bordercol px-4 py-3 rounded-2xl rounded-tl-none text-sm text-gray-200 leading-relaxed shadow">
             <div class="flex items-center justify-between pb-1 text-[11px] text-gray-500">
               <span>NovaBank Assistant</span>
               <button class="speak-btn text-gray-400 hover:text-white p-0.5 rounded transition" title="Read aloud">
@@ -1317,6 +1538,53 @@
               chatFormEl.dispatchEvent(new Event("submit"));
             });
           }
+        }
+
+        // Wire dynamic SIP slider recalculation
+        const sipWidget = msgDiv.querySelector(".sip-widget");
+        if (sipWidget) {
+          const sipSlider = sipWidget.querySelector(".sip-slider");
+          const sipAmtDisplay = sipWidget.querySelector(".sip-amt-display");
+          const totalInvDisplay = sipWidget.querySelector(".total-inv-display");
+          const futureValDisplay = sipWidget.querySelector(".future-val-display");
+          const gainDisplay = sipWidget.querySelector(".gain-display");
+          const activateBtn = sipWidget.querySelector(".activate-sip-btn");
+          const allocationTbody = sipWidget.querySelector(".allocation-tbody");
+
+          function recalculateSip() {
+            const P = parseFloat(sipSlider.value);
+            const N = 60; // 5 years
+            const annualRate = 12.0;
+            const r = (annualRate / 100) / 12;
+            const totalInv = P * N;
+            const futureVal = P * ((Math.pow(1 + r, N) - 1) / r) * (1 + r);
+            const gain = Math.max(0, futureVal - totalInv);
+            const multiplier = (futureVal / totalInv).toFixed(2);
+
+            sipAmtDisplay.textContent = "₹" + P.toLocaleString('en-IN') + "/mo";
+            totalInvDisplay.textContent = "₹" + Math.round(totalInv).toLocaleString('en-IN');
+            futureValDisplay.textContent = "₹" + Math.round(futureVal).toLocaleString('en-IN');
+            gainDisplay.textContent = "+₹" + Math.round(gain).toLocaleString('en-IN') + " (" + multiplier + "x)";
+
+            if (activateBtn) {
+              activateBtn.dataset.prompt = `Set up automated monthly SIP mandate of ₹${P.toLocaleString('en-IN')}`;
+            }
+
+            if (allocationTbody) {
+              const rows = allocationTbody.querySelectorAll("tr");
+              rows.forEach(row => {
+                const shareCell = row.children[1];
+                const amtCell = row.children[2];
+                if (shareCell && amtCell) {
+                  const pct = parseFloat(shareCell.textContent) || 0;
+                  const catAmt = Math.round(P * (pct / 100));
+                  amtCell.textContent = "₹" + catAmt.toLocaleString('en-IN');
+                }
+              });
+            }
+          }
+
+          sipSlider.addEventListener("input", recalculateSip);
         }
 
         // Wire interactive action buttons
@@ -1648,19 +1916,236 @@
       scrollToBottom();
     }
 
+    function cleanFormulaText(formula) {
+      return escapeHtml(formula.trim())
+        .replace(/\\begin\{aligned\}/g, "")
+        .replace(/\\end\{aligned\}/g, "")
+        .replace(/\\approx/g, "≈")
+        .replace(/\\times/g, " × ")
+        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "($1 / $2)")
+        .replace(/\{([0-9,]+)\}/g, "$1")
+        .replace(/\\\\/g, "<br/>")
+        .replace(/\^\{([^}]+)\}/g, "<sup>$1</sup>")
+        .replace(/\^([0-9]+)/g, "<sup>$1</sup>");
+    }
+
+    function formatInlineMarkdown(str) {
+      let out = str;
+      // Links: [label](url)
+      out = out.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-emerald-400 underline font-semibold hover:text-emerald-300 transition inline-flex items-center gap-1">$1 ↗</a>');
+      // Inline code: `code`
+      out = out.replace(/`([^`]+)`/g, '<code class="bg-[#242424] px-1.5 py-0.5 rounded text-emerald-300 font-mono text-[12px] border border-bordercol/40">$1</code>');
+      // Bold: **bold**
+      out = out.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
+      // Italic: *italic*
+      out = out.replace(/\*([^*]+)\*/g, '<em class="text-gray-300">$1</em>');
+      return out;
+    }
+
+    function renderMarkdownOffline(text) {
+      const placeholders = [];
+      // 1. Math formulas \[ ... \] and $$ ... $$
+      let str = text.replace(/\\\[([\s\S]*?)\\\]/g, (m, f) => {
+        const id = '__FORMULA_' + placeholders.length + '__';
+        placeholders.push(`<div class="my-2.5 p-3 rounded-xl bg-[#141414] border border-emerald-500/20 font-mono text-xs text-emerald-300 text-center overflow-x-auto shadow-inner">${cleanFormulaText(f)}</div>`);
+        return id;
+      });
+      str = str.replace(/\$\$([\s\S]*?)\$\$/g, (m, f) => {
+        const id = '__FORMULA_' + placeholders.length + '__';
+        placeholders.push(`<div class="my-2.5 p-3 rounded-xl bg-[#141414] border border-emerald-500/20 font-mono text-xs text-emerald-300 text-center overflow-x-auto shadow-inner">${cleanFormulaText(f)}</div>`);
+        return id;
+      });
+
+      // 2. Line by line parsing for tables, lists, headers, hrs
+      const cleanText = str.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      const lines = cleanText.split('\n');
+      const output = [];
+      let i = 0;
+
+      while (i < lines.length) {
+        const rawLine = lines[i];
+        const line = rawLine.trim();
+
+        // Table detection: line contains '|' and next line is a separator containing '---'
+        if (line.includes('|') && i + 1 < lines.length && /^\s*\|?\s*[:\-]+(\s*\|\s*[:\-]+)+\s*\|?\s*$/.test(lines[i+1].trim())) {
+          let headerCells = line.split('|').map(c => c.trim());
+          if (headerCells[0] === '') headerCells.shift();
+          if (headerCells.length > 0 && headerCells[headerCells.length - 1] === '') headerCells.pop();
+
+          i += 2; // skip header and separator
+          const rows = [];
+          while (i < lines.length && lines[i].trim().includes('|') && !/^\s*\|?\s*[:\-]+/.test(lines[i].trim())) {
+            let cells = lines[i].trim().split('|').map(c => c.trim());
+            if (cells[0] === '') cells.shift();
+            if (cells.length > 0 && cells[cells.length - 1] === '') cells.pop();
+            if (cells.length > 0) rows.push(cells);
+            i++;
+          }
+          const thHtml = headerCells.map(h => `<th class="py-2.5 px-3.5 whitespace-nowrap text-[11px] uppercase tracking-wider font-semibold text-emerald-400 border-b border-bordercol">${formatInlineMarkdown(escapeHtml(h))}</th>`).join('');
+          const tbHtml = rows.map(r => {
+            const tds = r.map(c => `<td class="py-2.5 px-3.5 text-xs text-gray-200 border-b border-bordercol/30">${formatInlineMarkdown(escapeHtml(c))}</td>`).join('');
+            return `<tr class="hover:bg-white/[0.04] transition">${tds}</tr>`;
+          }).join('');
+
+          output.push(`
+            <div class="my-3 overflow-x-auto rounded-xl border border-bordercol/80 bg-[#161616] shadow-lg">
+              <table class="w-full text-left text-xs border-collapse min-w-[340px]">
+                <thead class="bg-[#242424]"><tr>${thHtml}</tr></thead>
+                <tbody class="divide-y divide-bordercol/30 text-gray-200">${tbHtml}</tbody>
+              </table>
+            </div>
+          `);
+          continue;
+        }
+
+        // Horizontal Rule
+        if (/^---+$|^\*\*\*+$/.test(line)) {
+          output.push('<hr class="my-3 border-bordercol/60" />');
+          i++;
+          continue;
+        }
+
+        // Headings
+        if (line.startsWith('### ')) {
+          output.push(`<h3 class="text-sm font-bold text-white mt-3.5 mb-1.5 flex items-center gap-1.5">${formatInlineMarkdown(escapeHtml(line.slice(4)))}</h3>`);
+          i++;
+          continue;
+        }
+        if (line.startsWith('## ')) {
+          output.push(`<h2 class="text-base font-bold text-emerald-400 mt-4 mb-2">${formatInlineMarkdown(escapeHtml(line.slice(3)))}</h2>`);
+          i++;
+          continue;
+        }
+        if (line.startsWith('# ')) {
+          output.push(`<h1 class="text-lg font-bold text-white mt-4 mb-2.5">${formatInlineMarkdown(escapeHtml(line.slice(2)))}</h1>`);
+          i++;
+          continue;
+        }
+
+        // Blockquote
+        if (line.startsWith('> ')) {
+          output.push(`<div class="my-2 pl-3 py-1.5 border-l-2 border-emerald-500 bg-emerald-950/20 rounded-r text-xs text-emerald-200/90 italic">${formatInlineMarkdown(escapeHtml(line.slice(2)))}</div>`);
+          i++;
+          continue;
+        }
+
+        // Bullet lists
+        if (/^[•\-\*]\s/.test(line)) {
+          const items = [];
+          while (i < lines.length && /^[•\-\*]\s/.test(lines[i].trim())) {
+            items.push(lines[i].trim().replace(/^[•\-\*]\s+/, ''));
+            i++;
+          }
+          const liHtml = items.map(it => `<li class="py-0.5">${formatInlineMarkdown(escapeHtml(it))}</li>`).join('');
+          output.push(`<ul class="my-2 space-y-1 ml-4 list-disc text-gray-200 text-xs">${liHtml}</ul>`);
+          continue;
+        }
+
+        // Numbered lists
+        if (/^\d+\.\s/.test(line)) {
+          const items = [];
+          while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+            items.push(lines[i].trim().replace(/^\d+\.\s+/, ''));
+            i++;
+          }
+          const liHtml = items.map(it => `<li class="py-0.5">${formatInlineMarkdown(escapeHtml(it))}</li>`).join('');
+          output.push(`<ol class="my-2 space-y-1 ml-4 list-decimal text-gray-200 text-xs">${liHtml}</ol>`);
+          continue;
+        }
+
+        // Plain text / empty line
+        if (line === '') {
+          output.push('<br/>');
+        } else {
+          output.push(`<p class="my-1 leading-relaxed">${formatInlineMarkdown(escapeHtml(line))}</p>`);
+        }
+        i++;
+      }
+
+      let finalHtml = output.join('');
+      // Restore placeholders
+      placeholders.forEach((h, idx) => {
+        finalHtml = finalHtml.replace('__FORMULA_' + idx + '__', h);
+      });
+      return finalHtml;
+    }
+
     function formatAssistantText(text) {
-      let escaped = escapeHtml(text);
-      // Markdown links: [label](url)
-      escaped = escaped.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-emerald-400 underline font-semibold hover:text-emerald-300 transition inline-flex items-center gap-1">$1 ↗</a>');
-      // Inline code `code`
-      escaped = escaped.replace(/`(.*?)`/g, '<code class="bg-[#242424] px-1.5 py-0.5 rounded text-emerald-300 font-mono text-[12px] border border-bordercol/40">$1</code>');
-      // Bold text **text**
-      escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
-      // Bullet points
-      escaped = escaped.replace(/^• (.*?)$/gm, '<li class="ml-4 list-disc">$1</li>');
-      // Newlines
-      escaped = escaped.replace(/\n/g, '<br/>');
-      return escaped;
+      if (!text) return "";
+
+      // Clean LaTeX formulas first
+      let cleanText = text.replace(/\\\[([\s\S]*?)\\\]/g, (m, f) => {
+        return `\n\n<div class="my-2.5 p-3 rounded-xl bg-[#141414] border border-emerald-500/20 font-mono text-xs text-emerald-300 text-center overflow-x-auto shadow-inner">${cleanFormulaText(f)}</div>\n\n`;
+      });
+      cleanText = cleanText.replace(/\$\$([\s\S]*?)\$\$/g, (m, f) => {
+        return `\n\n<div class="my-2.5 p-3 rounded-xl bg-[#141414] border border-emerald-500/20 font-mono text-xs text-emerald-300 text-center overflow-x-auto shadow-inner">${cleanFormulaText(f)}</div>\n\n`;
+      });
+
+      // If marked.js is available via CDN, use it with custom styling
+      if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
+        try {
+          const renderer = new marked.Renderer();
+          renderer.table = function(header, body) {
+            return `
+              <div class="my-3 overflow-x-auto rounded-xl border border-bordercol/80 bg-[#161616] shadow-lg">
+                <table class="w-full text-left text-xs border-collapse min-w-[340px]">
+                  <thead class="bg-[#242424] text-emerald-400 font-semibold border-b border-bordercol text-[11px] uppercase tracking-wider">
+                    ${header}
+                  </thead>
+                  <tbody class="divide-y divide-bordercol/30 text-gray-200">
+                    ${body}
+                  </tbody>
+                </table>
+              </div>
+            `;
+          };
+          renderer.tablerow = function(content) {
+            return `<tr class="hover:bg-white/[0.04] transition">${content}</tr>`;
+          };
+          renderer.tablecell = function(content, flags) {
+            const type = flags.header ? 'th' : 'td';
+            const align = flags.align ? `text-${flags.align}` : 'text-left';
+            const classes = flags.header 
+              ? `py-2.5 px-3.5 whitespace-nowrap ${align} font-semibold text-emerald-400`
+              : `py-2.5 px-3.5 ${align} text-gray-200`;
+            return `<${type} class="${classes}">${content}</${type}>`;
+          };
+          renderer.link = function(href, title, text) {
+            return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-emerald-400 underline font-semibold hover:text-emerald-300 transition inline-flex items-center gap-1">${text} ↗</a>`;
+          };
+          renderer.codespan = function(code) {
+            return `<code class="bg-[#242424] px-1.5 py-0.5 rounded text-emerald-300 font-mono text-[12px] border border-bordercol/40">${code}</code>`;
+          };
+          renderer.code = function(code, lang) {
+            return `
+              <div class="my-2 rounded-xl bg-[#141414] border border-bordercol/80 overflow-hidden shadow">
+                <div class="flex items-center justify-between px-3 py-1.5 bg-[#202020] border-b border-bordercol/50 text-[10px] font-mono text-gray-400">
+                  <span>${lang || 'code'}</span>
+                </div>
+                <pre class="p-3 text-xs font-mono text-emerald-300 overflow-x-auto"><code>${code}</code></pre>
+              </div>
+            `;
+          };
+          renderer.heading = function(text, level) {
+            if (level === 1) return `<h1 class="text-lg font-bold text-white mt-4 mb-2.5">${text}</h1>`;
+            if (level === 2) return `<h2 class="text-base font-bold text-emerald-400 mt-4 mb-2">${text}</h2>`;
+            return `<h3 class="text-sm font-bold text-white mt-3.5 mb-1.5 flex items-center gap-1.5">${text}</h3>`;
+          };
+          renderer.hr = function() {
+            return `<hr class="my-3 border-bordercol/60"/>`;
+          };
+          renderer.blockquote = function(quote) {
+            return `<div class="my-2 pl-3 py-1.5 border-l-2 border-emerald-500 bg-emerald-950/20 rounded-r text-xs text-emerald-200/90 italic">${quote}</div>`;
+          };
+
+          return marked.parse(cleanText, { renderer: renderer, gfm: true, breaks: true });
+        } catch (e) {
+          console.warn("marked.js parsing failed, using offline fallback", e);
+        }
+      }
+
+      // Offline resilient fallback
+      return renderMarkdownOffline(cleanText);
     }
 
     function escapeHtml(string) {

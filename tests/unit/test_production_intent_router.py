@@ -215,3 +215,26 @@ async def test_layered_semantic_caching():
     await cache_engine.invalidate_customer_cache(customer_id)
     miss = await cache_engine.get_cached_response(customer_id, "What is my balance?")
     assert miss is None
+
+
+@pytest.mark.asyncio
+async def test_multi_account_portfolio_and_web_search_routing():
+    """Verify that multi-account inquiries and web search are classified with 100% precision."""
+    # 1. Multi-account inquiry with typos
+    q1 = await route_banking_request("how many account i ahve")
+    assert q1.intent == BankingIntent.BALANCE_CHECK
+    assert q1.sub_intent == BankingSubIntent.LIST_ACCOUNTS
+
+    q2 = await route_banking_request("how many accounts do i have?")
+    assert q2.intent == BankingIntent.BALANCE_CHECK
+    assert q2.sub_intent == BankingSubIntent.LIST_ACCOUNTS
+
+    q3 = await route_banking_request("list my accounts")
+    assert q3.intent == BankingIntent.BALANCE_CHECK
+    assert q3.sub_intent == BankingSubIntent.LIST_ACCOUNTS
+
+    # 2. Web search & regulatory queries
+    w1 = await route_banking_request("search web for latest rbi repo rate")
+    assert w1.intent == BankingIntent.KNOWLEDGE_FAQ
+    assert w1.sub_intent == BankingSubIntent.WEB_SEARCH
+

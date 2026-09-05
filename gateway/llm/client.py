@@ -35,12 +35,16 @@ class LLMGateway:
                 self._groq_routing = ChatGroq(
                     api_key=self.groq_key,
                     model_name=self.routing_model,
-                    temperature=0.0
+                    temperature=0.0,
+                    max_tokens=350,
+                    request_timeout=8.0
                 )
                 self._groq_reasoning = ChatGroq(
                     api_key=self.groq_key,
                     model_name=self.reasoning_model,
-                    temperature=0.2
+                    temperature=0.2,
+                    max_tokens=500,
+                    request_timeout=12.0
                 )
                 logger.info("LLMGateway initialized with Groq provider", routing_model=self.routing_model, reasoning_model=self.reasoning_model)
             except Exception as e:
@@ -184,7 +188,7 @@ class LLMGateway:
                     "entities": {},
                     "requires_clarification": False
                 })
-            elif any(k in text_lower for k in ["upi failed", "upi declined", "gpay failed", "phonepe failed", "upi error"]):
+            elif ("upi" in text_lower or "gpay" in text_lower or "phonepe" in text_lower) and any(w in text_lower for w in ["fail", "failed", "decline", "declined", "error", "bounce", "stuck"]):
                 return json.dumps({
                     "intent": "SUPPORT_DISPUTE",
                     "sub_intent": "UPI_PAYMENT_FAILED",

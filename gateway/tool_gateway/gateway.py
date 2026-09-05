@@ -12,7 +12,7 @@ from tools.transactions import get_transaction, get_recent_transactions
 from tools.cards import get_cards, freeze_card, unfreeze_card, replace_card, set_card_limits
 from tools.loans import calculate_emi_tool, check_loan_eligibility_tool, apply_loan_tool, get_loan_status_tool
 from tools.payments import get_billers_tool, fetch_bill_tool, pay_bill_tool, verify_upi_id_tool
-from tools.knowledge import search_knowledge_base_tool, create_support_ticket_tool
+from tools.knowledge import search_knowledge_base_tool, create_support_ticket_tool, search_web_banking_tool
 from tools.insights import get_spending_insights_tool, detect_subscriptions_tool, predict_cashflow_tool
 from tools.kyc import verify_aadhaar, verify_live_face_kyc, verify_gst
 from tools.statements import generate_account_statement, explain_transaction
@@ -143,6 +143,11 @@ class ToolGateway:
                     repo=repo,
                     query=parameters.get("query", ""),
                     limit=parameters.get("limit", 3)
+                )
+            elif tool_name == "search_web_banking":
+                result = await search_web_banking_tool(
+                    query=parameters.get("query", ""),
+                    max_results=parameters.get("max_results", 4)
                 )
             elif tool_name == "create_support_ticket":
                 result = await create_support_ticket_tool(

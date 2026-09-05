@@ -10,7 +10,11 @@ from gateway.tool_gateway.permissions import AgentRole
 from gateway.llm.client import llm_gateway
 from database.connection import AsyncSessionLocal
 from database.repositories.banking_repo import BankingRepository
-from agents.wealth.prompts import WEALTH_ADVISOR_SYSTEM_PROMPT, STUDENT_SIP_RECOMMENDATION_PROMPT
+from agents.wealth.prompts import (
+    WEALTH_ADVISOR_SYSTEM_PROMPT,
+    STUDENT_SIP_RECOMMENDATION_PROMPT,
+    GENERAL_SIP_RECOMMENDATION_PROMPT,
+)
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -19,7 +23,7 @@ logger = structlog.get_logger(__name__)
 async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
     """
     Orchestrates personalized wealth advisory:
-    1. SIP compound calculator tailored for students and early investors.
+    1. SIP compound calculator tailored for individual and institutional investors.
     2. Free live web search and Yahoo Finance stock quotes.
     3. Emits SIP_PLANNER_WIDGET or STOCK_MARKET_WIDGET for interactive UI exploration.
     """
@@ -34,11 +38,14 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
     customer_name = state.get("customer_name", "Valued Customer")
     first_name = customer_name.split(" ")[0] if customer_name else "there"
 
-    # Extract or infer investment parameters
+    # Extract or infer investment parameters (default to GENERAL investor, NOT student)
     wealth_data = dict(state.get("wealth_data") or {})
-    persona = wealth_data.get("user_persona") or "STUDENT"
-    if any(w in last_msg.lower() for w in ["college", "student", "coioolsge", "sstudnet", "university", "freshman"]):
+    persona = wealth_data.get("user_persona")
+    student_keywords = ["college student", "college", "university", "freshman", "sstudnet", "campus", "tuition fee", "pocket money"]
+    if any(w in last_msg.lower() for w in student_keywords):
         persona = "STUDENT"
+    elif not persona:
+        persona = "GENERAL"
 
     risk = wealth_data.get("risk_profile") or "MODERATE"
     if any(w in last_msg.lower() for w in ["aggressive", "high risk", "max return"]):
@@ -46,18 +53,37 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
     elif any(w in last_msg.lower() for w in ["conservative", "safe", "low risk"]):
         risk = "CONSERVATIVE"
 
-    # Extract monthly amount
+    # Extract monthly amount or total budget
     monthly_amt = wealth_data.get("monthly_investment")
-    amt_match = re.search(r"(?:₹|rs\.?|inr)?\s*(\d{1,6}(?:,\d{3})*(?:\.\d+)?)\s*(?:monthly|per month|sip|a month|/mo|amount)?", last_msg, re.IGNORECASE)
-    if amt_match:
-        try:
-            val = float(amt_match.group(1).replace(",", ""))
-            if val > 0 and val not in [2024, 2025, 2026, 2027]:
-                monthly_amt = val
-        except ValueError:
-            pass
+    lakh_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:lakh|lac)s?", last_msg, re.IGNORECASE)
+    cr_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:crore|cr)s?", last_msg, re.IGNORECASE)
+    k_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:k|thousand)s?", last_msg, re.IGNORECASE)
 
-    if not monthly_amt or monthly_amt <= 0:
+    extracted_total = None
+    if lakh_match:
+        extracted_total = float(lakh_match.group(1)) * 100000.0
+    elif cr_match:
+        extracted_total = float(cr_match.group(1)) * 10000000.0
+    elif k_match:
+        extracted_total = float(k_match.group(1)) * 1000.0
+
+    if extracted_total:
+        # If user specifies a total budget or corpus to turn into an engine, spread over 5 years (60 months)
+        if any(w in last_msg.lower() for w in ["budget", "total", "lumpsum", "corpus", "turn"]):
+            monthly_amt = round(extracted_total / 60.0, 2)
+        else:
+            monthly_amt = extracted_total
+    else:
+        amt_match = re.search(r"(?:₹|rs\.?|inr)?\s*(\d{1,6}(?:,\d{3})*(?:\.\d+)?)\s*(?:monthly|per month|sip|a month|/mo|amount)?", last_msg, re.IGNORECASE)
+        if amt_match:
+            try:
+                val = float(amt_match.group(1).replace(",", ""))
+                if val > 50 and val not in [2024, 2025, 2026, 2027]:
+                    monthly_amt = val
+            except ValueError:
+                pass
+
+    if not monthly_amt or monthly_amt <= 50:
         monthly_amt = 1000.0 if persona == "STUDENT" else 5000.0
 
     wealth_data["monthly_investment"] = monthly_amt
@@ -78,15 +104,20 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
                 break
 
         search_query = last_msg if not sym_match else f"{sym_match} stock price news fundamentals"
-        async with AsyncSessionLocal() as session:
-            repo = BankingRepository(session)
-            tool_res = await tool_gateway.execute_tool(
-                agent_role=AgentRole.WEALTH_ADVISOR.value,
-                tool_name="search_market_stocks",
-                repo=repo,
-                customer_id=customer_id,
-                parameters={"query": search_query, "symbol": sym_match}
-            )
+        try:
+            async with AsyncSessionLocal() as session:
+                repo = BankingRepository(session)
+                tool_res = await tool_gateway.execute_tool(
+                    agent_role=AgentRole.WEALTH_ADVISOR.value,
+                    tool_name="search_market_stocks",
+                    repo=repo,
+                    customer_id=customer_id,
+                    parameters={"query": search_query, "symbol": sym_match}
+                )
+        except Exception as db_exc:
+            logger.warning("DB session unavailable for search_market_stocks, invoking tool directly", error=str(db_exc))
+            from tools.wealth import search_market_stocks_tool
+            tool_res = await search_market_stocks_tool(query=search_query, symbol=sym_match)
 
         quote_info = (tool_res.data or {}).get("quote")
         web_results = (tool_res.data or {}).get("web_results", [])
@@ -131,7 +162,7 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
             llm_res = await llm_gateway.invoke_chat([
                 SystemMessage(content=WEALTH_ADVISOR_SYSTEM_PROMPT),
                 HumanMessage(content=user_prompt)
-            ], model_tier="reasoning")
+            ], model_tier="routing")
 
             if llm_res.provider != "deterministic_fallback" and len(llm_res.content.strip()) > 60:
                 advice = llm_res.content.strip()
@@ -157,20 +188,31 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 2. SIP Investment Advisory & Planning Branch
-    async with AsyncSessionLocal() as session:
-        repo = BankingRepository(session)
-        tool_res = await tool_gateway.execute_tool(
-            agent_role=AgentRole.WEALTH_ADVISOR.value,
-            tool_name="calculate_sip",
-            repo=repo,
-            customer_id=customer_id,
-            parameters={
-                "monthly_investment": monthly_amt,
-                "tenure_years": 5,
-                "annual_expected_cagr": 12.0,
-                "user_persona": persona,
-                "risk_profile": risk
-            }
+    try:
+        async with AsyncSessionLocal() as session:
+            repo = BankingRepository(session)
+            tool_res = await tool_gateway.execute_tool(
+                agent_role=AgentRole.WEALTH_ADVISOR.value,
+                tool_name="calculate_sip",
+                repo=repo,
+                customer_id=customer_id,
+                parameters={
+                    "monthly_investment": monthly_amt,
+                    "tenure_years": 5,
+                    "annual_expected_cagr": 12.0,
+                    "user_persona": persona,
+                    "risk_profile": risk
+                }
+            )
+    except Exception as db_exc:
+        logger.warning("DB session unavailable for calculate_sip, invoking tool directly", error=str(db_exc))
+        from tools.wealth import calculate_sip_tool
+        tool_res = await calculate_sip_tool(
+            monthly_investment=monthly_amt,
+            tenure_years=5,
+            annual_expected_cagr=12.0,
+            user_persona=persona,
+            risk_profile=risk
         )
 
     sip_calc = (tool_res.data or {}).get("sip_calculation", {})
@@ -181,58 +223,68 @@ async def wealth_advisor_node(state: BankingSessionState) -> Dict[str, Any]:
     gain_str = f"₹{sip_calc.get('estimated_gain', 0):,.2f}"
     multiplier = sip_calc.get("growth_multiplier", 1.4)
 
-    # Conversational Advice customized for students and early savers
+    icon = "🎓" if persona == "STUDENT" else "📈"
+    ten_yr_val = sip_calc.get("projections", [{}, {}, {}, {"estimated_value": 0}])[3].get("estimated_value", 0)
+
+    # Conversational Advice formatted with clean Markdown tables
     advice_lines = [
-        f"Hello {first_name}! 🎓 {strategy.get('headline', 'Personalized SIP Investment Plan')}\n",
+        f"Hello {first_name}! {icon} **{strategy.get('headline', 'Personalized SIP Investment Plan')}**\n",
         f"{strategy.get('guidance', '')}\n",
-        f"### 📊 Your 5-Year Compounding Projection (₹{monthly_amt:,.2f}/month @ 12% CAGR):",
-        f"• **Total Amount Invested**: **{total_inv_str}**",
-        f"• **Estimated Wealth Value**: **{future_val_str}** (Gains: **+{gain_str}**, **{multiplier}x** your principal)",
-        f"• **10-Year Horizon**: Investing consistently for 10 years would yield **₹{sip_calc.get('projections', [{}, {}, {}, {'estimated_value': 0}])[3].get('estimated_value', 0):,.2f}**!\n",
-        "### 🎯 Recommended Student Asset Allocation:"
+        "### 📊 5-Year Compounding Projection",
+        "| Metric | Projected Value |",
+        "| :--- | :--- |",
+        f"| **Monthly Contribution** | ₹{monthly_amt:,.2f} |",
+        f"| **Total Principal (5 Yrs)** | **{total_inv_str}** |",
+        f"| **Projected Maturity (12% CAGR)** | **{future_val_str}** |",
+        f"| **Estimated Wealth Gain** | **+{gain_str}** ({multiplier}x growth) |",
+        f"| **10-Year Milestone** | ₹{ten_yr_val:,.2f} |\n",
+        "### 🎯 Recommended Asset Allocation",
+        "| Category | Share | Monthly (₹) | Top Direct Funds | Expense |",
+        "| :--- | :--- | :--- | :--- | :--- |",
     ]
 
     for alloc in strategy.get("allocations", []):
+        funds_short = ", ".join(alloc.get("recommended_funds", [])[:2])
         advice_lines.append(
-            f"• **{alloc['category']} ({alloc['percentage']}%)**: ₹{alloc['amount']:,.2f}/month\n"
-            f"  *Funds*: {', '.join(alloc.get('recommended_funds', []))} (Expense: {alloc.get('expense_ratio')})\n"
-            f"  *Why*: {alloc.get('rationale')}"
+            f"| {alloc['category']} | {alloc['percentage']}% | ₹{alloc['amount']:,.2f} | {funds_short} | {alloc.get('expense_ratio', '0.20%')} |"
         )
 
-    advice_lines.append("\n### 💡 Smart Student Investment Rules:")
-    for tip in strategy.get("key_tips", []):
-        advice_lines.append(f"• {tip}")
-
     advice_lines.append(
-        "\nWould you like me to set up an automated SIP mandate from your NovaBank Savings account, "
-        "or adjust the monthly contribution amount?"
+        "\n*Note: Mutual fund investments are subject to market risks. Projections assume ~12% historical CAGR.*"
+    )
+    advice_lines.append(
+        f"\nWould you like me to set up an automated SIP mandate of **₹{monthly_amt:,.2f}/month** from your NovaBank account, or adjust the parameters?"
     )
 
     full_advice = "\n".join(advice_lines)
 
     # Enhance with LLM Wealth Advisor persona synthesis
     try:
-        persona_instructions = STUDENT_SIP_RECOMMENDATION_PROMPT if persona == "STUDENT" else ""
+        persona_instructions = STUDENT_SIP_RECOMMENDATION_PROMPT if persona == "STUDENT" else GENERAL_SIP_RECOMMENDATION_PROMPT
         system_content = f"{WEALTH_ADVISOR_SYSTEM_PROMPT}\n\n{persona_instructions}".strip()
 
         user_prompt = (
             f"Customer Name: {customer_name}\n"
-            f"Detected Persona: {persona} (Risk Profile: {risk})\n"
+            f"Customer Persona: {persona} (Risk Profile: {risk})\n"
             f"Customer Query: \"{last_msg}\"\n\n"
-            f"CALCULATED MATHEMATICAL SIP FIGURES:\n"
-            f"- Monthly Contribution: ₹{monthly_amt:,.2f}\n"
-            f"- 5-Year Total Principal: {total_inv_str}\n"
-            f"- 5-Year Estimated Maturity: {future_val_str} (Gain: +{gain_str}, {multiplier}x)\n"
-            f"- 10-Year Estimated Maturity: ₹{sip_calc.get('projections', [{}, {}, {}, {'estimated_value': 0}])[3].get('estimated_value', 0):,.2f}\n"
-            f"- Recommended Allocation: {json.dumps(strategy.get('allocations', []))}\n"
-            f"- Key Guidance: {strategy.get('guidance', '')}\n\n"
-            "Using these exact mathematical numbers and allocations, synthesize an inspiring, educational response that speaks directly to this customer."
+            f"MATHEMATICAL FIGURES (Use directly, DO NOT derive or print formula equations):\n"
+            f"- Monthly Investment: ₹{monthly_amt:,.2f}\n"
+            f"- 5-Year Invested Principal: {total_inv_str}\n"
+            f"- 5-Year Projected Maturity: {future_val_str} (Wealth Gain: +{gain_str}, {multiplier}x)\n"
+            f"- 10-Year Milestone: ₹{ten_yr_val:,.2f}\n"
+            f"- Recommended Allocations: {json.dumps(strategy.get('allocations', []))}\n\n"
+            "REQUIREMENTS FOR YOUR RESPONSE:\n"
+            "1. Be conversational, crisp, and engaging in modern ChatGPT banking agent style (max 180 words).\n"
+            "2. Present the figures with a clean Markdown table for the Asset Allocation breakdown (Category, Share %, Monthly ₹, Top Direct Funds).\n"
+            "3. DO NOT output manual algebraic equations, LaTeX derivations, or exponent arithmetic (no '(1+r)^60' or step-by-step arithmetic).\n"
+            f"4. Do NOT refer to the customer as a college student unless Customer Persona is STUDENT.\n"
+            "5. End with a friendly, direct call to action asking if they want to activate the SIP mandate or customize amounts."
         )
 
         llm_res = await llm_gateway.invoke_chat([
             SystemMessage(content=system_content),
             HumanMessage(content=user_prompt)
-        ], model_tier="reasoning")
+        ], model_tier="routing")
 
         if llm_res.provider != "deterministic_fallback" and len(llm_res.content.strip()) > 60:
             full_advice = llm_res.content.strip()

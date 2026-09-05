@@ -77,11 +77,11 @@ def recommend_investment_strategy(
     persona = user_persona.upper()
     risk = risk_profile.upper()
 
-    # Special handling for college students and low-budget starter investors
-    if "STUDENT" in persona or monthly_amount <= 2000.0:
+    # Special handling strictly for college students when explicitly identified
+    if "STUDENT" in persona:
         headline = "Student Starter Wealth Plan: Low Risk, Zero Hidden Fees & High Compounding"
         guidance = (
-            f"As a college student investing ₹{monthly_amount:,.2f}/month, your biggest superpower is **Time & Compounding**! "
+            f"As a student investing ₹{monthly_amount:,.2f}/month, your biggest superpower is **Time & Compounding**! "
             "Rather than high-risk speculative trading, the smartest strategy is starting micro-SIPs in low-cost, "
             "zero-commission Direct Index Funds and building an emergency liquid buffer."
         )
@@ -90,7 +90,7 @@ def recommend_investment_strategy(
                 "category": "Nifty 50 Index Fund (Large Cap)",
                 "percentage": 60,
                 "amount": round(monthly_amount * 0.60, 2),
-                "recommended_funds": ["UTI Nifty 50 Index Fund (Direct)", "Navi Nifty 50 Index Fund"],
+                "recommended_funds": ["UTI Nifty 50 Index Fund (Direct)", "Navi Nifty 50 Index Fund (Direct)"],
                 "expense_ratio": "0.15% - 0.20%",
                 "rationale": "Invests in top 50 Indian companies with rock-bottom expense ratios, ideal for long-term compounding."
             },
@@ -98,7 +98,7 @@ def recommend_investment_strategy(
                 "category": "Flexi-Cap / Mid-Cap Fund",
                 "percentage": 25,
                 "amount": round(monthly_amount * 0.25, 2),
-                "recommended_funds": ["Parag Parikh Flexi Cap Fund", "Motilal Oswal Midcap Fund"],
+                "recommended_funds": ["Parag Parikh Flexi Cap Fund (Direct)", "Motilal Oswal Midcap Fund (Direct)"],
                 "expense_ratio": "0.65% - 0.75%",
                 "rationale": "Delivers growth kicker across promising mid-sized Indian enterprises."
             },
@@ -106,15 +106,15 @@ def recommend_investment_strategy(
                 "category": "Liquid Emergency / Safe Buffer",
                 "percentage": 15,
                 "amount": round(monthly_amount * 0.15, 2),
-                "recommended_funds": ["ICICI Prudential Liquid Fund", "NovaBank High-Yield Auto-Sweep RD"],
+                "recommended_funds": ["ICICI Prudential Liquid Fund (Direct)", "NovaBank High-Yield Auto-Sweep RD"],
                 "expense_ratio": "0.18%",
-                "rationale": "Instant liquidity for college expenses, exams, or urgent emergencies without penalty."
+                "rationale": "Instant liquidity for academic expenses or urgent emergencies without penalty."
             }
         ]
         key_tips = [
             "Start with as little as ₹500/month via auto-debit on the 1st or 5th of each month.",
             "Choose 'Direct - Growth' plans instead of Regular plans to save up to 1.5% annually in distributor commission.",
-            "Increase your SIP amount by 10% each year (Step-Up SIP) as your pocket money or income rises."
+            "Increase your SIP amount by 10% each year (Step-Up SIP) as your income rises."
         ]
 
     elif risk == "AGGRESSIVE":

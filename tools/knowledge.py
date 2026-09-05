@@ -60,3 +60,21 @@ async def create_support_ticket_tool(
         }
     )
 
+
+async def search_web_banking_tool(query: str, max_results: int = 4) -> ToolResult:
+    """Performs live web and regulatory financial search via DuckDuckGo and official benchmarks."""
+    from services.market.free_search import free_market_service
+    try:
+        results = await free_market_service.search_web_banking(query=query, max_results=max_results)
+        return ToolResult(
+            success=True,
+            data={
+                "query": query,
+                "results": results,
+                "count": len(results)
+            }
+        )
+    except Exception as exc:
+        return ToolResult(success=False, error=f"Web search error: {str(exc)}")
+
+
