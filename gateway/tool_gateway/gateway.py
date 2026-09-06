@@ -16,7 +16,7 @@ from tools.knowledge import search_knowledge_base_tool, create_support_ticket_to
 from tools.insights import get_spending_insights_tool, detect_subscriptions_tool, predict_cashflow_tool
 from tools.kyc import verify_aadhaar, verify_live_face_kyc, verify_gst
 from tools.statements import generate_account_statement, explain_transaction
-from tools.wealth import calculate_sip_tool, recommend_portfolio_tool, search_market_stocks_tool
+from tools.wealth import calculate_sip_tool, recommend_portfolio_tool, search_market_stocks_tool, activate_sip_mandate_tool
 from tools.policies import get_policy_details_tool, compare_policies_tool
 from database.models.banking import Customer
 import structlog
@@ -282,6 +282,15 @@ class ToolGateway:
                     annual_expected_cagr=parameters.get("annual_expected_cagr", 12.0),
                     user_persona=parameters.get("user_persona", "STUDENT"),
                     risk_profile=parameters.get("risk_profile", "MODERATE")
+                )
+            elif tool_name == "activate_sip_mandate":
+                result = await activate_sip_mandate_tool(
+                    customer_id=customer_id,
+                    monthly_investment=parameters.get("monthly_investment", 5000.0),
+                    portfolio_name=parameters.get("portfolio_name", "Core-Satellite Direct Plan"),
+                    debit_day=parameters.get("debit_day", 5),
+                    tenure_years=parameters.get("tenure_years", 5),
+                    source_account=parameters.get("source_account", "****1001")
                 )
             elif tool_name == "recommend_portfolio":
                 result = await recommend_portfolio_tool(

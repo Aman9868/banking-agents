@@ -615,6 +615,15 @@ async def execute_transfer_node(state: BankingSessionState) -> Dict[str, Any]:
         "active_workflow": "NONE",
         "transfer_data": {},
         "final_response": resp,
-        "messages": [AIMessage(content=resp)]
+        "messages": [AIMessage(content=resp)],
+        "widget_type": "TRANSACTION_RECEIPT",
+        "widget_data": {
+            "type": "TRANSFER",
+            "reference": tx_ref,
+            "amount": data.get("amount", 0.0),
+            "beneficiary": data.get("beneficiary_name", "Beneficiary"),
+            "source_account": "****1234",
+            "status": "SUCCESS"
+        }
     }
 

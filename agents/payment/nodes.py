@@ -87,7 +87,15 @@ async def payment_orchestrator_node(state: BankingSessionState) -> Dict[str, Any
                 "active_workflow": "NONE",
                 "payment_data": {},
                 "final_response": resp,
-                "messages": [AIMessage(content=resp)]
+                "messages": [AIMessage(content=resp)],
+                "widget_type": "TRANSACTION_RECEIPT" if res.success else None,
+                "widget_data": {
+                    "type": "BILL_PAYMENT",
+                    "reference": idemp_key,
+                    "amount": data.get("amount", 0.0),
+                    "biller": data.get("biller_name", "Biller"),
+                    "status": "SUCCESS"
+                } if res.success else None
             }
 
         # 3. New Bill Payment Request - Fetch details

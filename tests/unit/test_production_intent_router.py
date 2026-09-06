@@ -9,9 +9,9 @@ from gateway.llm.router import (
     classify_intent,
     extract_slots
 )
+from langgraph.checkpoint.memory import MemorySaver
 from services.cache.cache_engine import cache_engine
 from agents.supervisor.graph import supervisor_graph_builder
-from checkpoints.checkpointer import get_checkpointer
 
 
 @pytest.mark.asyncio
@@ -70,7 +70,7 @@ async def test_granular_dispute_sub_intents():
 @pytest.mark.asyncio
 async def test_unauthorized_fraud_support_flow():
     """Verify that unauthorized fraud triggers high-priority ticket and card freeze suggestion."""
-    checkpointer = await get_checkpointer(use_postgres=False)
+    checkpointer = MemorySaver()
     app = supervisor_graph_builder.compile(checkpointer=checkpointer)
 
     initial_state = {
@@ -114,7 +114,7 @@ async def test_unauthorized_fraud_support_flow():
 @pytest.mark.asyncio
 async def test_temporal_date_time_query():
     """Verify that asking current date/time returns accurate temporal response."""
-    checkpointer = await get_checkpointer(use_postgres=False)
+    checkpointer = MemorySaver()
     app = supervisor_graph_builder.compile(checkpointer=checkpointer)
 
     state = {
@@ -237,4 +237,187 @@ async def test_multi_account_portfolio_and_web_search_routing():
     w1 = await route_banking_request("search web for latest rbi repo rate")
     assert w1.intent == BankingIntent.KNOWLEDGE_FAQ
     assert w1.sub_intent == BankingSubIntent.WEB_SEARCH
+
+
+@pytest.mark.asyncio
+async def test_out_of_domain_cake_query_yields_fallback_and_no_widget():
+    """Verify that 'tell me how to amek a cake' routes to fallback with NO widgets attached."""
+    decision = await route_banking_request("tell me how to amek a cake")
+    assert decision.intent == BankingIntent.GENERAL_CONVERSATION
+
+    # Verify execution in supervisor graph
+    checkpointer = MemorySaver()
+    app = supervisor_graph_builder.compile(checkpointer=checkpointer)
+    config = {"configurable": {"thread_id": "TEST-CAKE-ISOLATION-01"}}
+
+    # Turn 1: State has residual loan data from earlier inquiry
+    state = {
+        "messages": [HumanMessage(content="tell me how to amek a cake")],
+        "customer_id": 1,
+        "customer_name": "Amanpreet Singh",
+        "active_workflow": "NONE",
+        "loan_data": {"monthly_emi": 16254.67, "amount": 500000.0, "tenure_months": 36},
+        "widget_type": None,
+        "widget_data": None
+    }
+    output = await app.ainvoke(state, config=config)
+
+    assert output["current_intent"] == "GENERAL_CONVERSATION"
+    assert output["active_workflow"] == "NONE"
+    assert "tell me how to amek a cake" in output["final_response"] or "clarity" in output["final_response"].lower()
+    # Widget MUST be None - no EMI slider leaked!
+    assert output.get("widget_type") is None
+    assert output.get("widget_data") is None
+
+
+@pytest.mark.asyncio
+async def test_active_workflow_does_not_hijack_intent_switch_or_cake():
+    """Verify active workflow (e.g. OPEN_ACCOUNT) does not hijack other domain actions or out-of-domain queries."""
+    # 1. Cake query while in OPEN_ACCOUNT must NOT be captured as customer name
+    cake_decision = await route_banking_request(
+        "tell me how to amek a cake",
+        context={"active_workflow": "OPEN_ACCOUNT", "account_data": {"step": "NAME"}}
+    )
+    assert cake_decision.intent != BankingIntent.OPEN_ACCOUNT
+    assert cake_decision.intent == BankingIntent.GENERAL_CONVERSATION
+
+    # 2. Card action while in OPEN_ACCOUNT must route to CARD_ACTION
+    card_decision = await route_banking_request(
+        "freeze my debit card immediately",
+        context={"active_workflow": "OPEN_ACCOUNT", "account_data": {"step": "DOB"}}
+    )
+    assert card_decision.intent == BankingIntent.CARD_ACTION
+
+    # 3. Loan action while in OPEN_ACCOUNT must route to LOAN_ACTION
+    loan_decision = await route_banking_request(
+        "what is the EMI for 5 lakh loan",
+        context={"active_workflow": "OPEN_ACCOUNT", "account_data": {"step": "DOB"}}
+    )
+    assert loan_decision.intent == BankingIntent.LOAN_ACTION
+
+
+@pytest.mark.asyncio
+async def test_universal_workflow_cancellation():
+    """Verify saying 'cancel' cleanly cancels any active workflow."""
+    checkpointer = MemorySaver()
+    app = supervisor_graph_builder.compile(checkpointer=checkpointer)
+    config = {"configurable": {"thread_id": "TEST-UNIVERSAL-CANCEL-01"}}
+
+    state = {
+        "messages": [HumanMessage(content="cancel")],
+        "customer_id": 1,
+        "customer_name": "Amanpreet Singh",
+        "active_workflow": "OPEN_ACCOUNT",
+        "account_data": {"step": "DOB", "full_name": "Amanpreet Singh"}
+    }
+    output = await app.ainvoke(state, config=config)
+
+    assert output["current_intent"] == "CONFIRM_NO"
+    assert output["active_workflow"] == "NONE"
+    assert "cancelled" in output["final_response"].lower()
+    assert output.get("widget_type") is None
+
+
+@pytest.mark.asyncio
+async def test_sip_mandate_setup_requires_hitl_confirmation():
+    """Verify that clicking 'Activate SIP Mandate' transitions to CONFIRM step without leaking widgets."""
+    prompt = "Set up automated monthly SIP mandate of ₹5,000"
+    decision = await route_banking_request(prompt)
+    assert decision.intent == BankingIntent.WEALTH_ADVISORY
+    assert decision.sub_intent == BankingSubIntent.SIP_MANDATE_SETUP
+
+    checkpointer = MemorySaver()
+    app = supervisor_graph_builder.compile(checkpointer=checkpointer)
+    config = {"configurable": {"thread_id": "TEST-SIP-MANDATE-01"}}
+
+    state = {
+        "messages": [HumanMessage(content=prompt)],
+        "customer_id": 1,
+        "customer_name": "Amanpreet Singh",
+        "active_workflow": "WEALTH_ADVISORY",
+        "wealth_data": {"step": "ADVICE", "monthly_investment": 5000.0},
+        "widget_type": None,
+        "widget_data": None
+    }
+    output = await app.ainvoke(state, config=config)
+
+    assert output["active_workflow"] == "WEALTH_ADVISORY"
+    assert output["wealth_data"]["step"] == "CONFIRM"
+    assert "Authorization Summary" in output["final_response"] or "Mandate" in output["final_response"]
+    assert "Yes" in output["final_response"] and "No" in output["final_response"]
+    # Crucial: No residual slider widget!
+    assert output.get("widget_type") is None
+
+
+@pytest.mark.asyncio
+async def test_sip_mandate_execution_upon_confirmation():
+    """Verify replying 'Yes' to pending SIP mandate executes and emits SIP_MANDATE_RECEIPT."""
+    checkpointer = MemorySaver()
+    app = supervisor_graph_builder.compile(checkpointer=checkpointer)
+    config = {"configurable": {"thread_id": "TEST-SIP-MANDATE-EXEC-01"}}
+
+    state = {
+        "messages": [HumanMessage(content="Yes, please activate it")],
+        "customer_id": 1,
+        "customer_name": "Amanpreet Singh",
+        "active_workflow": "WEALTH_ADVISORY",
+        "wealth_data": {"step": "CONFIRM", "monthly_investment": 5000.0}
+    }
+    output = await app.ainvoke(state, config=config)
+
+    assert output["active_workflow"] == "NONE"
+    assert "SIP-MND-" in output["final_response"]
+    assert "Successfully Activated" in output["final_response"] or "active" in output["final_response"].lower()
+    assert output.get("widget_type") == "SIP_MANDATE_RECEIPT"
+    assert output.get("widget_data") is not None
+    assert output["widget_data"]["amount"] == 5000.0
+    assert "SIP-MND-" in output["widget_data"]["mandate_urn"]
+
+
+@pytest.mark.asyncio
+async def test_sip_mandate_cancellation():
+    """Verify replying 'No' or 'cancel' cancels the pending mandate cleanly."""
+    checkpointer = MemorySaver()
+    app = supervisor_graph_builder.compile(checkpointer=checkpointer)
+    config = {"configurable": {"thread_id": "TEST-SIP-CANCEL-01"}}
+
+    state = {
+        "messages": [HumanMessage(content="No, don't activate")],
+        "customer_id": 1,
+        "customer_name": "Amanpreet Singh",
+        "active_workflow": "WEALTH_ADVISORY",
+        "wealth_data": {"step": "CONFIRM", "monthly_investment": 5000.0}
+    }
+    output = await app.ainvoke(state, config=config)
+
+    assert output["active_workflow"] == "NONE"
+    assert "cancelled" in output["final_response"].lower()
+    assert output.get("widget_type") is None
+
+
+@pytest.mark.asyncio
+async def test_sip_mandate_interruption_and_continuation():
+    """Verify informational interruption during pending mandate returns info AND preserves continuation."""
+    checkpointer = MemorySaver()
+    app = supervisor_graph_builder.compile(checkpointer=checkpointer)
+    config = {"configurable": {"thread_id": "TEST-SIP-INTERRUPT-01"}}
+
+    # Interruption query: balance check
+    state = {
+        "messages": [HumanMessage(content="What is my account balance?")],
+        "customer_id": 1,
+        "customer_name": "Amanpreet Singh",
+        "active_workflow": "WEALTH_ADVISORY",
+        "wealth_data": {"step": "CONFIRM", "monthly_investment": 5000.0}
+    }
+    output = await app.ainvoke(state, config=config)
+
+    # Must answer balance
+    assert "balance" in output["final_response"].lower() or "₹" in output["final_response"]
+    # Must preserve and append mandate continuation prompt
+    assert "continuing with your sip mandate" in output["final_response"].lower()
+    assert output["active_workflow"] == "WEALTH_ADVISORY"
+    assert output["wealth_data"]["step"] == "CONFIRM"
+
+
 

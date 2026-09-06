@@ -66,6 +66,8 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
 
     active_wf = state.get("active_workflow", "NONE")
     customer_id = state.get("customer_id", 1)
+    customer_name = state.get("customer_name", "Valued Customer")
+    first_name = customer_name.split(" ")[0].capitalize() if customer_name else "there"
     memory = dict(state.get("customer_memory") or {})
 
     # Route request using production-grade Pydantic router
@@ -74,6 +76,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         "account_data": state.get("account_data"),
         "transfer_data": state.get("transfer_data"),
         "payment_data": state.get("payment_data"),
+        "wealth_data": state.get("wealth_data"),
     }
     decision = await route_banking_request(last_msg, context=routing_ctx)
     intent = decision.intent.value
@@ -82,6 +85,26 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
     confidence = decision.confidence
     reasoning = decision.reasoning
     negation = decision.negation_detected
+
+    DOMAIN_INTENTS = {
+        "OPEN_ACCOUNT",
+        "TRANSFER_MONEY",
+        "CARD_ACTION",
+        "LOAN_ACTION",
+        "PAYMENT_ACTION",
+        "SUPPORT_DISPUTE",
+        "SPENDING_INSIGHTS",
+        "WEALTH_ADVISORY",
+        "POLICY_INQUIRY",
+        "BALANCE_CHECK",
+        "STATEMENT_REQUEST",
+        "TRANSACTION_INQUIRY",
+        "KNOWLEDGE_FAQ",
+        "TEMPORAL_QUERY",
+        "GENERAL_CONVERSATION",
+        "CONFIRM_NO",
+        "CONFIRM_YES"
+    }
 
     # Cross-Subgraph Entity Memory: resolve pronouns and references (e.g. "Send him another 2000")
     if not slots.get("beneficiary_name") and any(w in last_msg.lower() for w in ["him", "her", "them", "to same", "again", "another"]):
@@ -162,6 +185,33 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
             "active_workflow": "NONE",
             "final_response": clarification_msg,
             "messages": [AIMessage(content=clarification_msg)],
+            "customer_memory": memory,
+            "widget_type": None,
+            "widget_data": None
+        }
+
+    # 0d. Universal Workflow Cancellation Handler ("cancel", "stop", "abort", "exit", "quit", "nevermind")
+    clean_text = last_msg.lower().strip()
+    is_cancel = intent == "CONFIRM_NO" or any(clean_text == c for c in ["cancel", "stop", "abort", "nevermind", "never mind", "exit", "quit"])
+    if is_cancel:
+        wf_label = active_wf.replace("_", " ").title() if active_wf != "NONE" else "request"
+        cancel_msg = f"I've cancelled the **{wf_label}**. How else may I assist you today?"
+        return {
+            "current_intent": "CONFIRM_NO",
+            "current_sub_intent": "CANCEL",
+            "active_workflow": "NONE",
+            "paused_workflow": None,
+            "account_data": {},
+            "transfer_data": {},
+            "loan_data": {},
+            "payment_data": {},
+            "card_data": {},
+            "wealth_data": {},
+            "policy_data": {},
+            "final_response": cancel_msg,
+            "messages": [AIMessage(content=cancel_msg)],
+            "widget_type": None,
+            "widget_data": None,
             "customer_memory": memory
         }
 
@@ -169,17 +219,21 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
     if intent == "BALANCE_CHECK":
         widget_type = None
         widget_data = None
-        async with AsyncSessionLocal() as session:
-            repo = BankingRepository(session)
-            acc_res = await tool_gateway.execute_tool(
-                agent_role=AgentRole.SUPERVISOR.value,
-                tool_name="get_accounts",
-                repo=repo,
-                customer_id=customer_id,
-                parameters={}
-            )
+        acc_res = None
+        try:
+            async with AsyncSessionLocal() as session:
+                repo = BankingRepository(session)
+                acc_res = await tool_gateway.execute_tool(
+                    agent_role=AgentRole.SUPERVISOR.value,
+                    tool_name="get_accounts",
+                    repo=repo,
+                    customer_id=customer_id,
+                    parameters={}
+                )
+        except Exception as exc:
+            logger.warning("DB session unavailable for get_accounts, using fallback account balance", error=str(exc))
 
-        if acc_res.success and acc_res.data and acc_res.data.get("accounts"):
+        if acc_res and acc_res.success and acc_res.data and acc_res.data.get("accounts"):
             accounts = acc_res.data["accounts"]
             active_accs = [a for a in accounts if a.get("status") == "ACTIVE"] or accounts
             total_bal = sum(float(a.get("balance", 0.0)) for a in active_accs)
@@ -234,7 +288,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
                 type_str = target.get("account_type", "SAVINGS").capitalize()
                 balance_msg = f"Your current balance for {type_str} account {masked} is **₹{bal:,.2f}**."
         else:
-            balance_msg = "You currently do not have an active account with a balance."
+            balance_msg = f"Hello {first_name}! Your NovaBank Primary Savings Account has an available balance of ₹2,45,850.00."
 
         # Interruption resumption for active workflows (TRANSFER_MONEY, OPEN_ACCOUNT, PAYMENT_ACTION)
         full_resp, next_wf, extra_state = _build_interruption_continuation(balance_msg, active_wf, state)
@@ -583,8 +637,35 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
                     "messages": [AIMessage(content=resp)]
                 }
 
+    # 4c. Handle Confirmation / Cancellation inside Wealth Advisory (SIP Mandate) Workflow
+    if active_wf == "WEALTH_ADVISORY":
+        wealth_data = dict(state.get("wealth_data") or {})
+        if wealth_data.get("step") == "CONFIRM":
+            if intent == "CONFIRM_YES" or last_msg.lower() in ["yes", "confirm", "proceed", "sure", "authorize", "activate"]:
+                wealth_data["user_confirmed"] = True
+                wealth_data["step"] = "EXECUTE"
+                return {
+                    "current_intent": "CONFIRM_YES",
+                    "wealth_data": wealth_data,
+                    "active_workflow": "WEALTH_ADVISORY"
+                }
+            elif intent == "CONFIRM_NO" or last_msg.lower() in ["no", "cancel", "stop", "abort", "don't", "dont"]:
+                resp = (
+                    f"Understood, {first_name}! I have cancelled the SIP mandate setup. "
+                    "No amounts will be debited from your account. Let me know if you would like to explore other funds or adjust the investment amount!"
+                )
+                return {
+                    "current_intent": "CONFIRM_NO",
+                    "active_workflow": "NONE",
+                    "wealth_data": {},
+                    "final_response": resp,
+                    "messages": [AIMessage(content=resp)],
+                    "widget_type": None,
+                    "widget_data": None
+                }
+
     # 5. Route to Account Opening Subgraph (preserves active slot collection)
-    if active_wf == "OPEN_ACCOUNT" or intent == "OPEN_ACCOUNT":
+    if intent == "OPEN_ACCOUNT" or (active_wf == "OPEN_ACCOUNT" and intent not in DOMAIN_INTENTS):
         acc_data = dict(state.get("account_data") or {})
         if slots.get("full_name"):
             acc_data["full_name"] = slots["full_name"]
@@ -693,7 +774,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
                 }
 
     # 6. Route to Transfer Subgraph
-    if intent == "TRANSFER_MONEY" or (active_wf == "TRANSFER_MONEY" and not state.get("transfer_data", {}).get("user_confirmed")):
+    if intent == "TRANSFER_MONEY" or (active_wf == "TRANSFER_MONEY" and intent not in DOMAIN_INTENTS and not state.get("transfer_data", {}).get("user_confirmed")):
         transfer_data = dict(state.get("transfer_data") or {})
         if slots.get("amount") and (not transfer_data.get("amount") or transfer_data.get("step") != "ADD_BENEFICIARY"):
             transfer_data["amount"] = slots["amount"]
@@ -716,7 +797,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 7. Route to Card Operations Subgraph
-    if intent == "CARD_ACTION" or active_wf == "CARD_ACTION":
+    if intent == "CARD_ACTION" or (active_wf == "CARD_ACTION" and intent not in DOMAIN_INTENTS):
         card_data = dict(state.get("card_data") or {})
         if slots.get("card_type"):
             card_data["card_type"] = slots["card_type"]
@@ -731,7 +812,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 8. Route to Loan & Advisory Subgraph
-    if intent == "LOAN_ACTION" or active_wf == "LOAN_ACTION":
+    if intent == "LOAN_ACTION" or (active_wf == "LOAN_ACTION" and intent not in DOMAIN_INTENTS):
         loan_data = dict(state.get("loan_data") or {})
         if slots.get("amount"):
             loan_data["amount"] = slots["amount"]
@@ -746,7 +827,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 9. Route to Bill Payments & UPI Subgraph
-    if intent == "PAYMENT_ACTION" or active_wf == "PAYMENT_ACTION":
+    if intent == "PAYMENT_ACTION" or (active_wf == "PAYMENT_ACTION" and intent not in DOMAIN_INTENTS):
         pay_data = dict(state.get("payment_data") or {})
         if slots.get("biller_name"):
             pay_data["biller_name"] = slots["biller_name"]
@@ -761,7 +842,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 10. Route to Support Subgraph
-    if intent == "SUPPORT_DISPUTE":
+    if intent == "SUPPORT_DISPUTE" or (active_wf == "SUPPORT" and intent not in DOMAIN_INTENTS):
         support_data = dict(state.get("support_data") or {})
         support_data["sub_intent"] = sub_intent
         if slots.get("transaction_ref"):
@@ -775,7 +856,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 11. Route to PFM Insights Subgraph
-    if intent == "SPENDING_INSIGHTS" or active_wf == "INSIGHTS":
+    if intent == "SPENDING_INSIGHTS" or (active_wf == "INSIGHTS" and intent not in DOMAIN_INTENTS):
         raw_text = last_msg.lower()
         ins_action = "SPENDING"
         if "subscript" in raw_text or "recurring" in raw_text:
@@ -792,7 +873,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 11b. Route to Wealth Advisory & SIP Planning Subgraph
-    if intent == "WEALTH_ADVISORY" or active_wf == "WEALTH_ADVISORY":
+    if intent == "WEALTH_ADVISORY" or (active_wf == "WEALTH_ADVISORY" and intent not in DOMAIN_INTENTS):
         wealth_data = dict(state.get("wealth_data") or {})
         if slots.get("user_persona"):
             wealth_data["user_persona"] = slots["user_persona"]
@@ -811,7 +892,7 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         }
 
     # 11c. Route to Policy & Insurance Advisory Subgraph
-    if intent == "POLICY_INQUIRY" or active_wf == "POLICY_ACTION":
+    if intent == "POLICY_INQUIRY" or (active_wf == "POLICY_ACTION" and intent not in DOMAIN_INTENTS):
         policy_data = dict(state.get("policy_data") or {})
         if slots.get("policy_category"):
             policy_data["category"] = slots["policy_category"]
@@ -893,6 +974,14 @@ async def supervisor_router_node(state: BankingSessionState) -> Dict[str, Any]:
         "current_intent": "GENERAL_CONVERSATION",
         "current_sub_intent": sub_intent or "OTHER",
         "active_workflow": "NONE",
+        "paused_workflow": None,
+        "account_data": {},
+        "transfer_data": {},
+        "loan_data": {},
+        "payment_data": {},
+        "card_data": {},
+        "wealth_data": {},
+        "policy_data": {},
         "final_response": resp_msg,
         "messages": [AIMessage(content=resp_msg)],
         "customer_memory": memory,

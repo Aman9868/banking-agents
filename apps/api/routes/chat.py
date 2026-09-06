@@ -215,43 +215,18 @@ async def _handle_chat_impl(request: ChatRequest):
                 "biller": final_state.get("payment_data", {}).get("biller_name"),
                 "amount": final_state.get("payment_data", {}).get("amount")
             }
+        # SIP mandate confirmation check
+        elif final_state.get("active_workflow") == "WEALTH_ADVISORY" and final_state.get("wealth_data", {}).get("step") == "CONFIRM":
+            requires_action = "CONFIRMATION_REQUIRED"
+            action_payload = {
+                "action": "SIP_MANDATE",
+                "amount": final_state.get("wealth_data", {}).get("monthly_investment", 5000.0),
+                "frequency": "MONTHLY"
+            }
 
-    # 5. Extract Generative UI Widgets (GenUI)
+    # 5. Extract Generative UI Widgets (GenUI) directly from current turn execution
     widget_type = final_state.get("widget_type")
     widget_data = final_state.get("widget_data")
-
-    # Dynamic Loan EMI Widget
-    if not widget_type and final_state.get("loan_data", {}).get("monthly_emi"):
-        widget_type = "EMI_SLIDER"
-        ld = final_state["loan_data"]
-        widget_data = {
-            "amount": ld.get("amount", 500000.0),
-            "tenure_months": ld.get("tenure_months", 36),
-            "interest_rate": 10.5,
-            "monthly_emi": ld.get("monthly_emi", 16254.67)
-        }
-    # Dynamic Digital Transaction Receipt Widget
-    elif not widget_type and final_state.get("transfer_data", {}).get("step") == "COMPLETED":
-        td = final_state["transfer_data"]
-        widget_type = "TRANSACTION_RECEIPT"
-        widget_data = {
-            "type": "TRANSFER",
-            "reference": td.get("transaction_ref", "TXN-10092"),
-            "amount": td.get("amount", 0.0),
-            "beneficiary": td.get("beneficiary_name", "Beneficiary"),
-            "source_account": "****1234",
-            "status": "SUCCESS"
-        }
-    elif not widget_type and final_state.get("payment_data", {}).get("step") == "COMPLETED":
-        pd = final_state["payment_data"]
-        widget_type = "TRANSACTION_RECEIPT"
-        widget_data = {
-            "type": "BILL_PAYMENT",
-            "reference": pd.get("payment_ref", "TXN-BILL-101"),
-            "amount": pd.get("amount", 0.0),
-            "biller": pd.get("biller_name", "Biller"),
-            "status": "SUCCESS"
-        }
 
     # 6. Guardrails AI Output Guard (PII Anonymization & Data Sanitization)
     safe_reply = enterprise_guardrails.sanitize_output(bot_reply)

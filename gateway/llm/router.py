@@ -40,6 +40,7 @@ class BankingSubIntent(str, Enum):
 
     # Wealth & Investment Advisory
     SIP_PLANNING = "SIP_PLANNING"
+    SIP_MANDATE_SETUP = "SIP_MANDATE_SETUP"
     STOCK_MARKET_SEARCH = "STOCK_MARKET_SEARCH"
     PORTFOLIO_RECOMMENDATION = "PORTFOLIO_RECOMMENDATION"
 
@@ -367,7 +368,20 @@ async def route_banking_request(
     acc_step = (context.get("account_data") or {}).get("step")
     is_opening_trigger = any(k in clean_text for k in ["open", "savings", "current", "apply", "register", "novabank"])
 
-    if active_wf == "OPEN_ACCOUNT" and not is_opening_trigger:
+    # Explicit domain switch, command, question, or out-of-domain detection
+    is_interruption_or_switch = (
+        any(k in clean_text for k in [
+            "balance", "transfer", "send money", "send ₹", "send rs", "card", "freeze", "unfreeze",
+            "block", "limit", "loan", "emi", "borrow", "bill", "power", "broadband", "electricity",
+            "recharge", "statement", "download", "dispute", "ticket", "complaint", "fraud",
+            "sip", "invest", "stock", "shares", "insurance", "policy", "pmjjby", "pmsby",
+            "cake", "bake", "recipe", "weather", "help", "who are you", "what can you do", "menu",
+            "who am i", "my name"
+        ])
+        or any(clean_text.startswith(w) for w in ["what", "how", "can", "why", "where", "tell me", "explain", "who", "which", "is", "are", "do", "before"])
+    )
+
+    if active_wf == "OPEN_ACCOUNT" and not is_opening_trigger and not is_interruption_or_switch:
         entities = _extract_entities_fast(raw_text)
         if acc_step == "NAME":
             entities.full_name = raw_text
@@ -390,8 +404,7 @@ async def route_banking_request(
     transfer_data = context.get("transfer_data") or {}
     transfer_step = transfer_data.get("step")
     if active_wf == "TRANSFER_MONEY" and transfer_step in ["ADD_BENEFICIARY", "RESOLVE"]:
-        is_interruption_or_question = any(clean_text.startswith(w) for w in ["what ", "how ", "can ", "why ", "where ", "tell me "])
-        if not is_interruption_or_question:
+        if not is_interruption_or_switch:
             entities = _extract_entities_fast(raw_text)
             return BankingRoutingDecision(
                 intent=BankingIntent.TRANSFER_MONEY,
@@ -412,6 +425,45 @@ async def route_banking_request(
             confidence=0.98,
             negation_detected=False,
             reasoning="Direct beneficiary account and IFSC code submission.",
+            entities=fast_entities,
+            cleaned_message=raw_text
+        )
+
+    # 4d. Contextual SIP Mandate Confirmation & Direct Activation Routing
+    wealth_data = context.get("wealth_data") or {}
+    wealth_step = wealth_data.get("step")
+    if active_wf == "WEALTH_ADVISORY" and wealth_step == "CONFIRM":
+        if any(k == clean_text or clean_text.startswith(k) for k in ["yes", "confirm", "proceed", "sure", "authorize", "activate", "yup", "ok", "okay"]):
+            return BankingRoutingDecision(
+                intent=BankingIntent.CONFIRM_YES,
+                confidence=0.99,
+                negation_detected=False,
+                reasoning="User confirmed SIP mandate authorization.",
+                entities=fast_entities,
+                cleaned_message=raw_text
+            )
+        elif any(k == clean_text or clean_text.startswith(k) for k in ["no", "cancel", "stop", "abort", "don't", "dont", "never"]):
+            return BankingRoutingDecision(
+                intent=BankingIntent.CONFIRM_NO,
+                confidence=0.99,
+                negation_detected=False,
+                reasoning="User declined SIP mandate authorization.",
+                entities=fast_entities,
+                cleaned_message=raw_text
+            )
+
+    is_sip_mandate_trigger = any(k in clean_text for k in [
+        "set up automated", "setup automated", "activate sip", "activate mandate", "start sip",
+        "set up sip", "setup sip", "sip mandate", "monthly sip mandate", "automated monthly sip",
+        "activate the sip"
+    ])
+    if is_sip_mandate_trigger and not any(clean_text.startswith(w) for w in ["what", "how", "why", "where"]):
+        return BankingRoutingDecision(
+            intent=BankingIntent.WEALTH_ADVISORY,
+            sub_intent=BankingSubIntent.SIP_MANDATE_SETUP,
+            confidence=0.99,
+            negation_detected=False,
+            reasoning="Direct SIP mandate activation request.",
             entities=fast_entities,
             cleaned_message=raw_text
         )
@@ -516,7 +568,10 @@ async def route_banking_request(
             fallback_sub = BankingSubIntent.FREEZE_CARD
         elif any(k in clean_text for k in ["invest", "invetsmnet", "sip", "mutual fund", "wealth", "1 cr", "crore", "savings of"]):
             fallback_intent = BankingIntent.WEALTH_ADVISORY
-            fallback_sub = BankingSubIntent.SIP_PLANNING
+            if any(k in clean_text for k in ["mandate", "activate", "set up", "setup", "start sip"]):
+                fallback_sub = BankingSubIntent.SIP_MANDATE_SETUP
+            else:
+                fallback_sub = BankingSubIntent.SIP_PLANNING
 
         return BankingRoutingDecision(
             intent=fallback_intent,

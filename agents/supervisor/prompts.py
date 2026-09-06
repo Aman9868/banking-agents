@@ -89,8 +89,15 @@ def build_interruption_continuation_prompt(
 
     elif active_wf == "WEALTH_ADVISORY":
         w_data = dict(state.get("wealth_data") or {})
-        amt = w_data.get("monthly_investment", 1000.0)
-        prompt = f"\n\nNow, continuing with your SIP investment planning of ₹{amt:,.2f}/month: Would you like to view our recommended funds or adjust the tenure?"
+        amt = w_data.get("monthly_investment", 5000.0)
+        step = w_data.get("step", "ADVICE")
+        if step == "CONFIRM":
+            prompt = (
+                f"\n\nNow, continuing with your SIP mandate: Would you like to authorize and activate "
+                f"the automated monthly SIP mandate of **₹{amt:,.2f}/month**? (Please reply 'Yes' to confirm or 'No' to cancel)."
+            )
+        else:
+            prompt = f"\n\nNow, continuing with your SIP investment planning of ₹{amt:,.2f}/month: Would you like to activate this SIP mandate or adjust the parameters?"
         return base_msg + prompt, "WEALTH_ADVISORY", {"wealth_data": w_data}
 
     elif active_wf == "POLICY_ACTION":

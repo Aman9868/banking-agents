@@ -38,6 +38,7 @@ AGENT_TOOL_PERMISSIONS: Dict[AgentRole, Set[str]] = {
         "generate_account_statement",
         "explain_transaction",
         "calculate_sip",
+        "activate_sip_mandate",
         "recommend_portfolio",
         "search_market_stocks",
         "search_web_banking",
@@ -104,6 +105,7 @@ AGENT_TOOL_PERMISSIONS: Dict[AgentRole, Set[str]] = {
     },
     AgentRole.WEALTH_ADVISOR: {
         "calculate_sip",
+        "activate_sip_mandate",
         "recommend_portfolio",
         "search_market_stocks",
         "search_web_banking",

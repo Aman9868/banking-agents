@@ -1,6 +1,8 @@
 """Wealth Advisory, SIP Planning, and Market Search Banking Tools."""
 
 from typing import Dict, Any, Optional
+import uuid
+from datetime import datetime, timezone, timedelta
 from tools.base import ToolResult
 from services.wealth.sip_calculator import calculate_sip_returns, recommend_investment_strategy
 from services.market.free_search import free_market_service
@@ -72,4 +74,43 @@ async def search_market_stocks_tool(
         return ToolResult(success=True, data=results)
     except Exception as exc:
         return ToolResult(success=False, error=f"Market search error: {str(exc)}")
+
+
+async def activate_sip_mandate_tool(
+    customer_id: int,
+    monthly_investment: float,
+    portfolio_name: str = "Core-Satellite Direct Plan",
+    debit_day: int = 5,
+    tenure_years: int = 5,
+    source_account: str = "****1001"
+) -> ToolResult:
+    """Registers and schedules an automated monthly SIP standing instruction mandate."""
+    try:
+        mandate_urn = f"SIP-MND-2026-{uuid.uuid4().hex[:6].upper()}"
+        now = datetime.now(timezone.utc)
+        # Next debit is on the specified debit_day
+        if now.day >= debit_day:
+            # next month
+            next_month = now.month % 12 + 1
+            next_year = now.year + (1 if next_month == 1 else 0)
+            next_debit = datetime(next_year, next_month, debit_day, tzinfo=timezone.utc)
+        else:
+            next_debit = datetime(now.year, now.month, debit_day, tzinfo=timezone.utc)
+
+        mandate_details = {
+            "mandate_urn": mandate_urn,
+            "customer_id": customer_id,
+            "monthly_investment": monthly_investment,
+            "portfolio_name": portfolio_name,
+            "frequency": "MONTHLY",
+            "debit_day": debit_day,
+            "tenure_years": tenure_years,
+            "source_account": source_account,
+            "status": "ACTIVE",
+            "next_debit_date": next_debit.strftime("%d %b %Y"),
+            "created_at": now.isoformat()
+        }
+        return ToolResult(success=True, data=mandate_details)
+    except Exception as exc:
+        return ToolResult(success=False, error=f"SIP mandate activation error: {str(exc)}")
 
